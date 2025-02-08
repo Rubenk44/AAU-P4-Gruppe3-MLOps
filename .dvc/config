@@ -1,4 +1,6 @@
 [core]
     remote = myremote
+    autostage = true
 ['remote "myremote"']
     url = s3://aaumlopsp4/Dataset/
+    region = your-region
