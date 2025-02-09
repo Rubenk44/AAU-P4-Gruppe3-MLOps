@@ -4,6 +4,7 @@ import torchvision.transforms as transforms
 import onnxruntime as ort
 import numpy as np
 import logging
+import time
 
 def main():
     torch.manual_seed(42)
@@ -23,6 +24,7 @@ def main():
 
     total_correct = 0
     total_samples = 0
+    start_time = time.time()
 
     for images, labels in testloader:
         images_np = images.numpy().astype(np.float32) 
@@ -33,7 +35,11 @@ def main():
         total_correct += np.sum(predictions == labels.numpy())
         total_samples += labels.size(0)
 
+    end_time = time.time()
+    test_time = end_time - start_time
     final_accuracy = total_correct / total_samples * 100
+
+    print(f"Total Inference Time: {test_time:.4f} seconds")
     print(f"Final Test Accuracy: {final_accuracy:.2f}%")
 
 if __name__ == "__main__":
