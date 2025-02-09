@@ -8,18 +8,28 @@ from datetime import datetime
 import yaml
 import json
 
-# Device configuration (MPS for Mac, CUDA for other GPUs, CPU fallback)
-if torch.backends.mps.is_available():
-    device = torch.device("mps")
-    print("Using Apple Silicon GPU with MPS")
-elif torch.cuda.is_available():
-    device = torch.device("cuda")
-    print("Using CUDA GPU")
-else:
-    device = torch.device("cpu")
-    print("Using CPU")
-    
-def train(train_loader, val_loader, net, criterion, optimizer, epochs=10):
+def device_conf():
+    # Device configuration (MPS for Mac, CUDA for other GPUs, CPU fallback)
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+        print("Using Apple Silicon GPU with MPS")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+        print("Using CUDA GPU")
+    else:
+        device = torch.device("cpu")
+        print("Using CPU")
+        return device
+
+
+def load_config(config_path):
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    print("Config loaded from file:", config.get("dataset", "Unknown Dataset"))
+    return config
+
+
+def train(train_loader, val_loader, net, criterion, optimizer, device, epochs=10):
     print("Training")
     net.to(device)
     for epoch in range(epochs):
@@ -36,7 +46,7 @@ def train(train_loader, val_loader, net, criterion, optimizer, epochs=10):
             optimizer.step()
 
             running_loss += loss.item()
-            if i % 2000 == 1999:
+            if i % 2000 == 1999: ############################################# gør sådan den her del ændre sig an på størrelsen af datasættet
                 print(f'[{epoch + 1}, {i + 1}] loss: {running_loss / 2000:.3f}')
                 running_loss = 0.0
         
@@ -55,7 +65,8 @@ def train(train_loader, val_loader, net, criterion, optimizer, epochs=10):
     print("Finished Training")
     return net
 
-def model_export(model, config):
+
+def model_export(model, config, device):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     onnx_filename = f"Model_{timestamp}.onnx"
     config_filename = f"Config_{onnx_filename}.txt"
@@ -64,21 +75,27 @@ def model_export(model, config):
         json.dump(config, f, indent=4)
 
     dummy_input = torch.randn(1, 3, 32, 32).to(device)
-    torch.onnx.export(model, dummy_input, onnx_filename)
+    torch.onnx.export(
+        model,
+        dummy_input,
+        onnx_filename,
+        opset_version=11, 
+        input_names=["input"], 
+        output_names=["output"],  
+        dynamic_axes={  
+            "input": {0: "batch_size"},
+            "output": {0: "batch_size"},
+        }
+    )
     print(f"Model & config file saved as: {onnx_filename} & {config_filename}")
 
-def load_config(config_path):
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-    print("Config loaded from file:", config.get("dataset", "Unknown Dataset"))
-    return config
 
 def main():
     config = load_config("config.yaml")
     torch.manual_seed(42)
+    device = device_conf()
     
     transform = transforms.ToTensor()
-
     trainset = torchvision.datasets.CIFAR10(root='data', train=True, download=True, transform=transform)
     
     train_size = int(0.8 * len(trainset))
@@ -92,8 +109,9 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
 
-    model = train(train_loader, val_loader, net, criterion, optimizer, epochs=1)
-    model_export(model, config)
+    model = train(train_loader, val_loader, net, criterion, optimizer, device, epochs=1)
+    model_export(model, config, device)
+
 
 if __name__ == "__main__":
     main()
