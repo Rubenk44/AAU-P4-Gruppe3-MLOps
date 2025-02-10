@@ -3,33 +3,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
-from torch.optim.lr_scheduler import StepLR
 from modelstructure import ImageNet
-from datetime import datetime
-import json
-from utils import device_conf, load_config
+from utils import *
 import wandb
-import os
 
 
-def get_run_number():
-    wandb_dir = "wandb"
-    if not os.path.exists(wandb_dir):
-        return 1
-    runs = [d for d in os.listdir(wandb_dir) if os.path.isdir(os.path.join(wandb_dir, d))]
-    return len(runs)
-
-
-def train(train_loader, val_loader, device, epochs=10):
+def train(train_loader, val_loader, device, config):
     print("Training")
 
-    net = ImageNet().to(device)
+    model = ImageNet().to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
-    scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+    optimizer = pick_optimizer(model, config)
+    scheduler = pick_scheduler(optimizer, config)
 
-    for epoch in range(epochs):
-        net.train()
+    for epoch in range(config['train']['epochs']):
+        model.train()
         running_loss = 0.0
         num_batches = len(train_loader)
 
@@ -37,7 +25,7 @@ def train(train_loader, val_loader, device, epochs=10):
             inputs, labels = inputs.to(device), labels.to(device)
 
             optimizer.zero_grad()
-            outputs = net(inputs)
+            outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -46,7 +34,7 @@ def train(train_loader, val_loader, device, epochs=10):
             if (i + 1) % max(1, num_batches // 5) == 0:
                 print(f'[{epoch + 1}, {i + 1}/{num_batches}] loss: {running_loss / (i + 1):.3f}')
         
-        net.eval()
+        model.eval()
         val_loss = 0.0
         correct = 0
         total = 0
@@ -54,7 +42,7 @@ def train(train_loader, val_loader, device, epochs=10):
         with torch.no_grad():
             for inputs, labels in val_loader:
                 inputs, labels = inputs.to(device), labels.to(device)
-                outputs = net(inputs)
+                outputs = model(inputs)
 
                 loss = criterion(outputs, labels)
                 val_loss += loss.item()
@@ -81,31 +69,7 @@ def train(train_loader, val_loader, device, epochs=10):
         scheduler.step()
 
     print("Finished Training")
-    return net
-
-
-def model_export(model, config, device):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    onnx_filename = f"Model_{timestamp}.onnx"
-    config_filename = f"Config_{onnx_filename}.txt"
-
-    with open(config_filename, "w") as f:
-        json.dump(config, f, indent=4)
-
-    dummy_input = torch.randn(1, 3, 32, 32).to(device)
-    torch.onnx.export(
-        model,
-        dummy_input,
-        onnx_filename,
-        opset_version=11, 
-        input_names=["input"], 
-        output_names=["output"],  
-        dynamic_axes={  
-            "input": {0: "batch_size"},
-            "output": {0: "batch_size"},
-        }
-    )
-    print(f"Model & config file saved as: {onnx_filename} & {config_filename}")
+    return model
 
 
 def main():
@@ -113,22 +77,11 @@ def main():
     torch.manual_seed(42)
     device = device_conf()
 
-    run_number = get_run_number()
-    wandb.login()
-    wandb.init(project='DAKI4_testing', name=f"Job {run_number}")
+    begin_wandb()
 
-    transform = transforms.ToTensor()
-    trainset = torchvision.datasets.CIFAR10(root='data', train=True, download=True, transform=transform)
-    
-    train_size = int(0.8 * len(trainset))
-    val_size = len(trainset) - train_size
-    train_subset, val_subset = torch.utils.data.random_split(trainset, [train_size, val_size])
-
-    train_loader = torch.utils.data.DataLoader(train_subset, batch_size=32, shuffle=True, num_workers=0)
-    val_loader = torch.utils.data.DataLoader(val_subset, batch_size=32, shuffle=False, num_workers=0)
-
-    model = train(train_loader, val_loader, device, epochs=10)
-    model_export(model, config, device)
+    train_loader, val_loader = data_load(config)
+    model = train(train_loader, val_loader, device, config)
+    model_export(model, device, config)
 
 
 if __name__ == "__main__":
