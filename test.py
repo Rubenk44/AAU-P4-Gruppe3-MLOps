@@ -22,8 +22,8 @@ def main():
 
     input_name = model.get_inputs()[0].name 
 
-    total_correct = 0
-    total_samples = 0
+    correct = 0
+    total = 0
     start_time = time.time()
 
     for images, labels in testloader:
@@ -32,12 +32,12 @@ def main():
         outputs = model.run(None, {input_name: images_np})
         predictions = np.argmax(outputs[0], axis=1)
 
-        total_correct += np.sum(predictions == labels.numpy())
-        total_samples += labels.size(0)
+        correct += np.sum(predictions == labels.numpy())
+        total += labels.size(0)
 
     end_time = time.time()
     test_time = end_time - start_time
-    final_accuracy = total_correct / total_samples * 100
+    final_accuracy = correct / total * 100
 
     print(f"Total Inference Time: {test_time:.4f} seconds")
     print(f"Final Test Accuracy: {final_accuracy:.2f}%")

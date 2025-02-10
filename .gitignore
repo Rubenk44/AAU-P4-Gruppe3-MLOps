@@ -3,4 +3,5 @@ Lecture 1/data
 */__pycache__
 __pycache__
 data
+wandb
 .vs/
