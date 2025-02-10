@@ -28,8 +28,6 @@ def train(train_loader, val_loader, device, epochs=10):
     optimizer = torch.optim.Adam(net.parameters(), lr=0.001)
     scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
 
-    net.to(device)
-
     for epoch in range(epochs):
         net.train()
         running_loss = 0.0
@@ -45,7 +43,7 @@ def train(train_loader, val_loader, device, epochs=10):
             optimizer.step()
 
             running_loss += loss.item()
-            if (i + 1) % (num_batches // 5) == 0:
+            if (i + 1) % max(1, num_batches // 5) == 0:
                 print(f'[{epoch + 1}, {i + 1}/{num_batches}] loss: {running_loss / (i + 1):.3f}')
         
         net.eval()
