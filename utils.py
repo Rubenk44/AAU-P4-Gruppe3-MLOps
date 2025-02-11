@@ -154,7 +154,7 @@ def data_load(config):
         os.mkdir(config['dataset']['data'])
 
     if len(os.listdir(config['dataset']['data'])) == 0:
-        print("aaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        print("\nEmpty directory. Importing dataset from S3")
         download_data = [
             "dvc",
             "import-url",
@@ -165,7 +165,7 @@ def data_load(config):
         subprocess.run(download_data, check=True)
 
     else:
-        print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+        print("\nDataset exists. Checking for update using DVC")
         update_data = ["dvc", "update", config['dataset']['dvc_path']]
         print(config['dataset']['dvc_path'])
         subprocess.run(update_data, check=True)
