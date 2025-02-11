@@ -14,7 +14,7 @@ import wandb
 
 
 def train(train_loader, val_loader, device, config):
-    print("Training")
+    print("\nTraining")
 
     model = ImageNet().to(device)
     criterion = nn.CrossEntropyLoss()

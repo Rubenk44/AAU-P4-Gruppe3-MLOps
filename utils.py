@@ -3,6 +3,7 @@ import yaml
 import torchvision
 import torchvision.transforms as transforms
 from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader, random_split
 import wandb
 import os
 from datetime import datetime
@@ -143,9 +144,9 @@ class TransformSubset(torch.utils.data.Dataset):
 def data_load(config):
     transform = transforms.ToTensor()
 
-    print(
-        "remember to run aws configure in terminal and setup credentials"
-    )  # print kun når der er error
+    #   print(
+    #      "remember to run aws configure in terminal and setup credentials"
+    # )  # print kun når der er error
     # Download dataset
     # check for data folder if not make one
 
@@ -154,7 +155,7 @@ def data_load(config):
         os.mkdir(config['dataset']['data'])
 
     if len(os.listdir(config['dataset']['data'])) == 0:
-        print("\nEmpty directory. Importing dataset from S3")
+        print("\nEmpty folder. Importing dataset from S3...")
         download_data = [
             "dvc",
             "import-url",
@@ -165,22 +166,20 @@ def data_load(config):
         subprocess.run(download_data, check=True)
 
     else:
-        print("\nDataset exists. Checking for update using DVC")
+        print("\nDataset exists in folder. Checking for update using DVC...")
         update_data = ["dvc", "update", config['dataset']['dvc_path']]
         print(config['dataset']['dvc_path'])
         subprocess.run(update_data, check=True)
 
     # Downloading dataset
     trainset = torchvision.datasets.CIFAR10(
-        root=config['dataset']['data'], train=True, download=True, transform=transform
+        root=config['dataset']['data'], train=True, download=False, transform=transform
     )
 
     # Splitting data into Training and validation
     train_size = int(config['train']['train_test_split'] * len(trainset))
     val_size = len(trainset) - train_size
-    train_subset, val_subset = torch.utils.data.random_split(
-        trainset, [train_size, val_size]
-    )
+    train_subset, val_subset = random_split(trainset, [train_size, val_size])
 
     print(f"train: {train_subset[1][0].shape}")
     print(f"val: {val_subset[1][0].shape}")
@@ -190,20 +189,17 @@ def data_load(config):
     train_subset = TransformSubset(train_subset, train_transform)
     val_subset = TransformSubset(val_subset, val_transform)
 
-    #  train_subset.dataset.transform = train_transform
-    # val_subset.dataset.transform = val_transform
-
     print(f"train: {train_subset[1][0].shape}")
     print(f"val: {val_subset[1][0].shape}")
 
-    train_loader = torch.utils.data.DataLoader(
+    train_loader = DataLoader(
         train_subset,
         batch_size=config['train']['batch_size'],
         shuffle=True,
         num_workers=config['train']['num_workers'],
     )
 
-    val_loader = torch.utils.data.DataLoader(
+    val_loader = DataLoader(
         val_subset,
         batch_size=config['train']['batch_size'],
         shuffle=False,
