@@ -30,11 +30,100 @@ def load_config(config_path):
     return config
 
 
+def add_transform(config, train_subset):
+    # missing centercrop from configuration file
+    train_trans = []
+    list_mean = []
+    list_std = []
+
+    for tensor, _ in train_subset:
+        list_mean.append(tensor)
+        list_std.append(tensor)
+
+    # Calculating std and mean using [channel, height, width]
+    mean = torch.stack(list_mean).mean(dim=[0, 2, 3])
+    std = torch.stack(list_std).std(dim=[0, 2, 3])
+
+    if config['data_augmentation']['horizontal_flip'] > 0:
+        train_trans.append(
+            transforms.RandomHorizontalFlip(
+                config['data_augmentation']['horizontal_flip']
+            )
+        )
+
+    if config['data_augmentation']['vertical_flip'] > 0:
+        train_trans.append(
+            transforms.RandomVerticalFlip(config['data_augmentation']['vertical_flip'])
+        )
+
+    if any(
+        config['data_augmentation'][i] > 0
+        for i in ['brightness', 'contrast', 'saturation', 'hue']
+    ):
+        train_trans.append(
+            transforms.ColorJitter(
+                brightness=config['data_augmentation']['brightness'],
+                contrast=config['data_augmentation']['contrast'],
+                saturation=config['data_augmentation']['saturation'],
+                hue=config['data_augmentation']['hue'],
+            )
+        )
+
+    if config['data_augmentation']['grayscale'] > 0:
+        train_trans.append(
+            transforms.RandomGrayscale(config['data_augmentation']['grayscale'])
+        )
+
+    if config['data_augmentation']['rotation'] != (0, 0):
+        train_trans.append(
+            transforms.RandomRotation(config['data_augmentation']['rotation'])
+        )
+
+    if (
+        config['data_augmentation']['width_shift'] > 0
+        or config['data_augmentation']['height_shift'] > 0
+    ):
+        train_trans.append(
+            transforms.RandomAffine(
+                degrees=config['data_augmentation']['degrees'],
+                translate=(
+                    config['data_augmentation']['width_shift'],
+                    config['data_augmentation']['height_shift'],
+                ),
+            )
+        )
+
+    if config['data_augmentation']['distortion_scale'] > 0:
+        train_trans.append(
+            transforms.RandomPerspective(
+                distortion_scale=config['data_augmentation']['distortion_scale']
+            )
+        )
+
+    print(f"Following transformations have been added:{train_trans}")
+
+    train_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Resize(size=(config['data_augmentation']['resize'])),
+            *train_trans,
+            transforms.Normalize(mean, std),
+        ]
+    )
+
+    val_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Resize(size=(config['data_augmentation']['resize'])),
+            transforms.Normalize(mean, std),
+        ]
+    )
+
+    return train_transform, val_transform
+
+
 def data_load(config):
     transform = transforms.ToTensor()
-    # val_transform = transforms.Compose([
-
-    # ])
 
     # Downloading dataset
     trainset = torchvision.datasets.CIFAR10(
@@ -47,6 +136,10 @@ def data_load(config):
     train_subset, val_subset = torch.utils.data.random_split(
         trainset, [train_size, val_size]
     )
+
+    train_transform, val_transform = add_transform(config, train_subset)
+    train_subset.dataset.transform = train_transform
+    val_subset.dataset.transform = val_transform
 
     train_loader = torch.utils.data.DataLoader(
         train_subset,
