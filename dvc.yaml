@@ -1,0 +1,7 @@
+stages:
+  prepare_data:
+    cmd: echo "Dataset ready"
+    deps:
+      - dataset/cifar-10-batches-py
+    outs:
+      - dataset/cifar-10-batches-py

@@ -7,6 +7,7 @@ import wandb
 import os
 from datetime import datetime
 import json
+import subprocess
 
 
 def device_conf():
@@ -35,6 +36,7 @@ def add_transform(config, train_subset):
     train_trans = []
     list_mean = []
     list_std = []
+    c, h, w = train_subset[1][0].shape
 
     for tensor, _ in train_subset:
         list_mean.append(tensor)
@@ -43,6 +45,11 @@ def add_transform(config, train_subset):
     # Calculating std and mean using [channel, height, width]
     mean = torch.stack(list_mean).mean(dim=[0, 2, 3])
     std = torch.stack(list_std).std(dim=[0, 2, 3])
+
+    if config['data_augmentation']['resize'] != (h, w):
+        train_trans.append(
+            transforms.Resize(size=(config['data_augmentation']['resize']))
+        )
 
     if config['data_augmentation']['horizontal_flip'] > 0:
         train_trans.append(
@@ -104,8 +111,6 @@ def add_transform(config, train_subset):
 
     train_transform = transforms.Compose(
         [
-            transforms.ToTensor(),
-            transforms.Resize(size=(config['data_augmentation']['resize'])),
             *train_trans,
             transforms.Normalize(mean, std),
         ]
@@ -113,8 +118,6 @@ def add_transform(config, train_subset):
 
     val_transform = transforms.Compose(
         [
-            transforms.ToTensor(),
-            # transforms.Resize(size=(config['data_augmentation']['resize'])),
             transforms.Normalize(mean, std),
         ]
     )
@@ -122,8 +125,50 @@ def add_transform(config, train_subset):
     return train_transform, val_transform
 
 
+class TransformSubset(torch.utils.data.Dataset):
+    def __init__(self, subset, transform):
+        self.subset = subset
+        self.transform = transform
+
+    def __getitem__(self, index):
+        img, label = self.subset[index]
+        if self.transform:
+            img = self.transform(img)
+        return img, label
+
+    def __len__(self):
+        return len(self.subset)
+
+
 def data_load(config):
     transform = transforms.ToTensor()
+
+    print(
+        "remember to run aws configure in terminal and setup credentials"
+    )  # print kun når der er error
+    # Download dataset
+    # check for data folder if not make one
+
+    isExist = os.path.exists(config['dataset']['data'])
+    if not isExist:
+        os.mkdir(config['dataset']['data'])
+
+    if len(os.listdir(config['dataset']['data'])) == 0:
+        print("aaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        download_data = [
+            "dvc",
+            "import-url",
+            config['dataset']['s3_path'],
+            config['dataset']['data'],
+        ]
+        print(config['dataset']['s3_path'])
+        subprocess.run(download_data, check=True)
+
+    else:
+        print("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+        update_data = ["dvc", "update", config['dataset']['dvc_path']]
+        print(config['dataset']['dvc_path'])
+        subprocess.run(update_data, check=True)
 
     # Downloading dataset
     trainset = torchvision.datasets.CIFAR10(
@@ -137,11 +182,19 @@ def data_load(config):
         trainset, [train_size, val_size]
     )
 
-    print(train_subset[1][0].shape)
+    print(f"train: {train_subset[1][0].shape}")
+    print(f"val: {val_subset[1][0].shape}")
+
     train_transform, val_transform = add_transform(config, train_subset)
-    train_subset.dataset.transform = train_transform
-    val_subset.dataset.transform = val_transform
-    print(train_subset[1][0].shape)
+
+    train_subset = TransformSubset(train_subset, train_transform)
+    val_subset = TransformSubset(val_subset, val_transform)
+
+    #  train_subset.dataset.transform = train_transform
+    # val_subset.dataset.transform = val_transform
+
+    print(f"train: {train_subset[1][0].shape}")
+    print(f"val: {val_subset[1][0].shape}")
 
     train_loader = torch.utils.data.DataLoader(
         train_subset,
