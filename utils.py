@@ -114,7 +114,7 @@ def add_transform(config, train_subset):
     val_transform = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Resize(size=(config['data_augmentation']['resize'])),
+            # transforms.Resize(size=(config['data_augmentation']['resize'])),
             transforms.Normalize(mean, std),
         ]
     )
@@ -137,9 +137,11 @@ def data_load(config):
         trainset, [train_size, val_size]
     )
 
+    print(train_subset[1][0].shape)
     train_transform, val_transform = add_transform(config, train_subset)
     train_subset.dataset.transform = train_transform
     val_subset.dataset.transform = val_transform
+    print(train_subset[1][0].shape)
 
     train_loader = torch.utils.data.DataLoader(
         train_subset,

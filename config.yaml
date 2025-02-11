@@ -1,6 +1,7 @@
 dataset:
   data: ../data
   script_path: ../datasets/cifar10_keras.py
+  
 
 model:
   script_path: ../models/optimized.py
