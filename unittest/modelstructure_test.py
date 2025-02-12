@@ -1,31 +1,31 @@
 import torch
 import torch.nn as nn
+import os
+import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from modelstructure import ImageNet
 
 
 # Test: Kontroller, at forward-pass fungerer
 def test_forward_pass():
     model = ImageNet()
-    model.eval()  # Sæt modellen i eval-mode
+    model.eval()
 
-    # Dummy input: Batchstørrelse = 4, 3 kanaler, 32x32 billede
     input_data = torch.randn(4, 3, 32, 32)
 
-    # Forward-pass
     output = model(input_data)
 
-    # Test output dimensions (batch size = 4, classes = 10)
     assert output.shape == (4, 10), f"Expected output shape (4, 10), got {output.shape}"
 
 
-# Test: Kontroller, at modellen kan lære på dummy-data
 def test_training_step():
     model = ImageNet()
-    model.train()  # Sæt modellen i train-mode
+    model.train()
 
     # Dummy input og labels
     input_data = torch.randn(4, 3, 32, 32)
-    labels = torch.randint(0, 10, (4,))  # Random labels mellem 0 og 9
+    labels = torch.randint(0, 10, (4,))
 
     # Loss-funktion og optimizer
     criterion = nn.CrossEntropyLoss()
