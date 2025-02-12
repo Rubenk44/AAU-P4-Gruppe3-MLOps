@@ -1,0 +1,6 @@
+{
+    "train": {
+        "optimizer": "adam",
+        "lr": 0.001
+    }
+}
