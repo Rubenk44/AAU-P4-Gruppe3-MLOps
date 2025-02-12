@@ -1,0 +1,13 @@
+md5: 290600c42e6631c36353ca7947eac454
+deps:
+- md5: 285b634cd8528084f07476ae5d296738.dir
+  size: 113380868
+  nfiles: 50000
+  hash: md5
+  path: s3://aaumlopsp4/Dataset/v1.0.0/trainset/
+outs:
+- md5: 60b9a2cc26dac97f6334292fd6e0c867.dir
+  size: 113380868
+  nfiles: 50000
+  hash: md5
+  path: trainset
