@@ -4,12 +4,12 @@ from modelstructure import ImageNet
 from utils.utils import (
     load_config,
     device_conf,
-    data_load,
     model_export,
     begin_wandb,
     pick_optimizer,
     pick_scheduler,
 )
+from utils.dataloader import data_load
 import wandb
 
 from dotenv import load_dotenv
