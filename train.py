@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from modelstructure import ImageNet
-from utils import (
+from utils.utils import (
     load_config,
     device_conf,
     data_load,
@@ -11,6 +11,12 @@ from utils import (
     pick_scheduler,
 )
 import wandb
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+aws_key = os.getenv("AWS_public")
 
 
 def train(train_loader, val_loader, device, config):
