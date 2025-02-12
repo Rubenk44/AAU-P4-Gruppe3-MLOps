@@ -47,7 +47,12 @@ def add_transform(config, train_subset):
     mean = torch.stack(list_mean).mean(dim=[0, 2, 3])
     std = torch.stack(list_std).std(dim=[0, 2, 3])
 
-    if config['data_augmentation']['resize'] != (h, w):
+    if (
+        config['data_augmentation']['resize'][0] < 32
+        or config['data_augmentation']['resize'][1] < 32
+    ):
+        print("No resizing since minimum is 32x32")
+    elif config['data_augmentation']['resize'] != [h, w]:
         train_trans.append(
             transforms.Resize(size=(config['data_augmentation']['resize']))
         )
@@ -82,7 +87,7 @@ def add_transform(config, train_subset):
             transforms.RandomGrayscale(config['data_augmentation']['grayscale'])
         )
 
-    if config['data_augmentation']['rotation'] != (0, 0):
+    if config['data_augmentation']['rotation'] != [0, 0]:
         train_trans.append(
             transforms.RandomRotation(config['data_augmentation']['rotation'])
         )
@@ -171,7 +176,7 @@ def data_load(config):
         print(config['dataset']['dvc_path'])
         subprocess.run(update_data, check=True)
 
-    # Downloading dataset
+    # Extracts data from dataset with CIFAR10 datastructure
     trainset = torchvision.datasets.CIFAR10(
         root=config['dataset']['data'], train=True, download=False, transform=transform
     )
