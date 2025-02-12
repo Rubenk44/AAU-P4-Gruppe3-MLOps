@@ -6,8 +6,8 @@ deps:
   hash: md5
   path: s3://aaumlopsp4/Dataset/v1.0.0/testset/
 outs:
-- md5: ae90a106f0e19444aa417725b2ec1fc5.dir
-  size: 22676343
-  nfiles: 10000
+- md5: 0f3f8a191016d8c1cb975306f5403d0c.dir
+  size: 22673843
+  nfiles: 9999
   hash: md5
   path: testset

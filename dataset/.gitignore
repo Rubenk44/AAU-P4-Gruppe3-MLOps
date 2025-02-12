@@ -1,1 +1,5 @@
 /cifar-10-batches-py
+/trainset
+/testset
+/trainset_labels.csv
+/testset_labels.csv
