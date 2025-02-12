@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import folder_up
-
 from modelstructure import ImageNet
 
 
