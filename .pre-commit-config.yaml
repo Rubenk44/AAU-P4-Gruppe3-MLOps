@@ -11,4 +11,6 @@ repos:
     hooks:
       - id: flake8
         language_version: python3
-        args: ['--max-line-length=88']  
+        args: 
+          - '--max-line-length=88'
+          - '--per-file-ignores=unittest/*:F401'

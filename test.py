@@ -6,12 +6,17 @@ import numpy as np
 import logging
 import time
 
+
 def main():
     torch.manual_seed(42)
 
     transform = transforms.ToTensor()
-    testset = torchvision.datasets.CIFAR10(root='data', train=False, download=True, transform=transform)
-    testloader = torch.utils.data.DataLoader(testset, batch_size=8, shuffle=False, num_workers=2)
+    testset = torchvision.datasets.CIFAR10(
+        root='data', train=False, download=True, transform=transform
+    )
+    testloader = torch.utils.data.DataLoader(
+        testset, batch_size=8, shuffle=False, num_workers=2
+    )
 
     model_path = "Model_20250209_224001.onnx"
     try:
@@ -20,14 +25,14 @@ def main():
         logging.error(f"Error loading ONNX model: {e}")
         raise e
 
-    input_name = model.get_inputs()[0].name 
+    input_name = model.get_inputs()[0].name
 
     correct = 0
     total = 0
     start_time = time.time()
 
     for images, labels in testloader:
-        images_np = images.numpy().astype(np.float32) 
+        images_np = images.numpy().astype(np.float32)
 
         outputs = model.run(None, {input_name: images_np})
         predictions = np.argmax(outputs[0], axis=1)
@@ -41,6 +46,7 @@ def main():
 
     print(f"Total Inference Time: {test_time:.4f} seconds")
     print(f"Final Test Accuracy: {final_accuracy:.2f}%")
+
 
 if __name__ == "__main__":
     main()
