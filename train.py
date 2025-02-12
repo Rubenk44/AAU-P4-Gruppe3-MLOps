@@ -15,8 +15,6 @@ import wandb
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
-aws_key = os.getenv("AWS_public")
 
 
 def train(train_loader, val_loader, device, config):

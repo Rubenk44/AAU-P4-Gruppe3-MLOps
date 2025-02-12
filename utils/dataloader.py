@@ -4,7 +4,8 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 import os
 import subprocess
-
+import boto3
+from dotenv import load_dotenv
 
 def add_transform(config, train_subset):
     # missing centercrop from configuration file
@@ -121,7 +122,16 @@ class TransformSubset(torch.utils.data.Dataset):
 
 
 def data_load(config):
-    transform = transforms.ToTensor()
+
+    #AWS S3 setup to acces the dataset with the given credentials from env file
+    load_dotenv()
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_DEFAULT_REGION"),
+    )
+    print
 
     #   print(
     #      "remember to run aws configure in terminal and setup credentials"
@@ -152,7 +162,7 @@ def data_load(config):
 
     # Extracts data from dataset with CIFAR10 datastructure
     trainset = torchvision.datasets.CIFAR10(
-        root=config['dataset']['data'], train=True, download=False, transform=transform
+        root=config['dataset']['data'], train=True, download=True, transform=None
     )
 
     # Splitting data into Training and validation
