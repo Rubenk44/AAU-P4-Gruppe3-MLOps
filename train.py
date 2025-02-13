@@ -12,10 +12,6 @@ from utils.utils import (
 from utils.dataloader import data_load
 import wandb
 
-from dotenv import load_dotenv
-import os
-
-
 
 def train(train_loader, val_loader, device, config):
     print("\nTraining")

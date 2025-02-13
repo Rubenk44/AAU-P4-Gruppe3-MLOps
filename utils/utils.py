@@ -5,6 +5,8 @@ import wandb
 import os
 from datetime import datetime
 import json
+from dotenv import load_dotenv
+import boto3
 
 
 def device_conf():
@@ -57,6 +59,18 @@ def begin_wandb():
 
     wandb.login()
     wandb.init(project='MLOps', name=f"Job {len(runs)}")
+
+
+def load_aws_credentials():
+    load_dotenv()
+    s3 = boto3.client(
+        "s3",
+        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+        region_name=os.getenv("AWS_DEFAULT_REGION"),
+    )
+    print("S3 client created, and creaditials are valid")
+    return s3
 
 
 def model_export(model, device, config):

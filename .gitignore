@@ -4,3 +4,4 @@ Lecture 1/data
 __pycache__
 wandb
 .vs/
+/trainset

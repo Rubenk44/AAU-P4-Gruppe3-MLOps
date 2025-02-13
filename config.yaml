@@ -1,8 +1,24 @@
 dataset:
   data: ../AAU-P4-Gruppe3-MLOps/dataset
-  s3_path: s3://aaumlopsp4/Dataset/cifar-10-batches-py/
-  dvc_path: ../AAU-P4-Gruppe3-MLOps/dataset/cifar-10-batches-py.dvc
-  script_path: ../datasets/cifar10_keras.py
+  s3_path: s3://aaumlopsp4/Dataset/
+  dvc_path: ../AAU-P4-Gruppe3-MLOps/dataset/
+  s3_path_trainset: s3://aaumlopsp4/Dataset/v1.0.0/trainset/
+  s3_path_testset: s3://aaumlopsp4/Dataset/v1.0.0/testset/
+
+  
+  trainset_dvc: trainset
+  testset_dvc: testset
+  
+  dataset_path: ../AAU-P4-Gruppe3-MLOps/dataset/
+  data_version: v1.0.0
+  trainset: trainset/
+  trainset_labels: trainset_labels.csv
+  testset: testset/
+  testset_labels: testset_labels.csv
+
+
+  
+  
   
 
 model:

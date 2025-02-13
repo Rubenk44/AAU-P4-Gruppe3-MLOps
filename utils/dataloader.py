@@ -1,11 +1,12 @@
 import torch
-import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
-import os
 import subprocess
-import boto3
+import os as os
 from dotenv import load_dotenv
+from utils.utils import load_aws_credentials
+from utils.custom_dataset import CustomDataset
+
 
 def add_transform(config, train_subset):
     # missing centercrop from configuration file
@@ -123,46 +124,45 @@ class TransformSubset(torch.utils.data.Dataset):
 
 def data_load(config):
 
-    #AWS S3 setup to acces the dataset with the given credentials from env file
     load_dotenv()
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-        region_name=os.getenv("AWS_DEFAULT_REGION"),
-    )
-    print
+    load_aws_credentials()  # Ensure your AWS credentials are loaded
 
-    #   print(
-    #      "remember to run aws configure in terminal and setup credentials"
-    # )  # print kun når der er error
-    # Download dataset
-    # check for data folder if not make one
+    dataset_path = config['dataset']['dataset_path']
+    if not os.path.exists(dataset_path):
+        os.mkdir(dataset_path)
 
-    isExist = os.path.exists(config['dataset']['data'])
-    if not isExist:
-        os.mkdir(config['dataset']['data'])
-
-    if len(os.listdir(config['dataset']['data'])) == 0:
+    if len(os.listdir(dataset_path)) == 0:
         print("\nEmpty folder. Importing dataset from S3...")
-        download_data = [
-            "dvc",
-            "import-url",
-            config['dataset']['s3_path'],
-            config['dataset']['data'],
-        ]
-        print(config['dataset']['s3_path'])
-        subprocess.run(download_data, check=True)
+        subprocess.run(
+            [
+                "dvc",
+                "import-url",
+                config['dataset']['s3_path_testset'],
+                config['dataset']['dataset_path'],
+            ],
+            check=True,
+        )
 
+        subprocess.run(
+            [
+                "dvc",
+                "import-url",
+                config['dataset']['s3_path_trainset'],
+                config['dataset']['dataset_path'],
+            ],
+            check=True,
+        )
     else:
         print("\nDataset exists in folder. Checking for update using DVC...")
-        update_data = ["dvc", "update", config['dataset']['dvc_path']]
-        print(config['dataset']['dvc_path'])
-        subprocess.run(update_data, check=True)
 
-    # Extracts data from dataset with CIFAR10 datastructure
-    trainset = torchvision.datasets.CIFAR10(
-        root=config['dataset']['data'], train=True, download=True, transform=None
+        # Update data using DVC
+        subprocess.run(["dvc", "update", config['dataset']['trainset_dvc']], check=True)
+        subprocess.run(["dvc", "update", config['dataset']['testset_dvc']], check=True)
+
+    trainset = CustomDataset(
+        image_dir=config['dataset']['dataset_path'],
+        label_csv=config['dataset']['trainset_labels'],
+        transform=None,
     )
 
     # Splitting data into Training and validation
@@ -170,16 +170,10 @@ def data_load(config):
     val_size = len(trainset) - train_size
     train_subset, val_subset = random_split(trainset, [train_size, val_size])
 
-    print(f"train: {train_subset[1][0].shape}")
-    print(f"val: {val_subset[1][0].shape}")
-
     train_transform, val_transform = add_transform(config, train_subset)
 
     train_subset = TransformSubset(train_subset, train_transform)
     val_subset = TransformSubset(val_subset, val_transform)
-
-    print(f"train: {train_subset[1][0].shape}")
-    print(f"val: {val_subset[1][0].shape}")
 
     train_loader = DataLoader(
         train_subset,
