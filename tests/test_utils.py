@@ -40,7 +40,7 @@ def test_load_config(tmp_path):
 
 def test_pick_optimizer():
     model = torch.nn.Linear(10, 2)
-    config = {'train': {'optimizer': 'adam', 'lr': 0.001}}
+    config = {'train': {'optimizer': 'adam', 'lr': 0.002}}
     optimizer = pick_optimizer(model, config)
     assert isinstance(optimizer, Adam)
     assert optimizer.defaults['lr'] == 0.001
