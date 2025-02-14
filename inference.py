@@ -79,16 +79,17 @@ def main():
     for idx, image in enumerate(dataloader):
         # First transforming the image to a numpy array for use in openCV
         img = tensor_to_img(image)
-        print(img.shape)
         cv.imshow("Image", img)
+
         # Also transforms the tensor to numpy for use in the ONNX session
         image_np = image.numpy().astype(np.float32)
+        # Calculates all predictions whereafter
         preds = session.run(None, {input_name: image_np})[0]
-        print(preds.shape)
-        print(preds)
+        # Uses argmax to select the most likely class
         prediction = np.argmax(preds[0], axis=-1)
-        print(f"Prediction: {prediction}")
 
+        # Lastly, prints the final decision and wait on the "q" press.
+        print(f"Prediction: {prediction}")
         cv.waitKey()
 
 
