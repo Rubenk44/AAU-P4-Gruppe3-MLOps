@@ -6,8 +6,21 @@ import onnxruntime as ort
 import numpy as np
 import cv2 as cv
 
-class CustomDataset(Dataset):  # Change to Dataset
-    def __init__(self, dir: str = "inference_data", dimensions: tuple[int, int] = (32, 32), transform: bool = True):
+class CustomDataset(Dataset):
+    def __init__(self, dir: str = "inference_data", transform: bool = True, dimensions: tuple[int, int] | list[int, int] = (32, 32)):
+        """
+        Instantiates a custom dataset with the default directory being 'inference_data'.
+        
+        Attributes
+        -------------
+        dir: str
+            the directory in which the custom dataset is stored
+        transform: bool
+            logic for enabling or disabling the images to a certain size, see dimensions
+        dimensions: tuple[int, int] | list[int, int]
+            the dimensions for the optional resize, given by the transform boolean
+        -------------
+        """
         self.dir = dir
         self.data_list = [file for file in os.listdir(self.dir) if os.path.isfile(os.path.join(self.dir, file))]
         self.dims = dimensions
