@@ -3,16 +3,5 @@
         "unittest"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-
-    "terminal.integrated.env.windows": {
-        "PYTHONPATH": "${workspaceFolder}"
-    },
-    "terminal.integrated.env.linux": {
-        "PYTHONPATH": "${workspaceFolder}"
-    },
-    "terminal.integrated.env.osx": {
-        "PYTHONPATH": "${workspaceFolder}"
-    },
-    "python.envFile": "${workspaceFolder}/.env"
+    "python.testing.pytestEnabled": true
 }

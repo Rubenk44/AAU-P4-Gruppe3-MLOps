@@ -43,7 +43,7 @@ def test_pick_optimizer():
     config = {'train': {'optimizer': 'adam', 'lr': 0.002}}
     optimizer = pick_optimizer(model, config)
     assert isinstance(optimizer, Adam)
-    assert optimizer.defaults['lr'] == 0.001
+    assert optimizer.defaults['lr'] == 0.002
 
 
 def test_pick_scheduler():
