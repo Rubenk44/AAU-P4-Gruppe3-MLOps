@@ -129,30 +129,20 @@ def data_load(config):
     # Download dataset
     # check for data folder if not make one
 
-    isExist = os.path.exists(config['dataset']['data'])
-    if not isExist:
-        os.mkdir(config['dataset']['data'])
+    data_dir = config['dataset']['data']
+    dvc_file = config['dataset']['dvc_path']
 
-    if len(os.listdir(config['dataset']['data'])) == 0:
-        print("\nEmpty folder. Importing dataset from S3...")
-        download_data = [
-            "dvc",
-            "import-url",
-            config['dataset']['s3_path'],
-            config['dataset']['data'],
-        ]
-        print(config['dataset']['s3_path'])
-        subprocess.run(download_data, check=True)
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
 
-    else:
-        print("\nDataset exists in folder. Checking for update using DVC...")
-        update_data = ["dvc", "update", config['dataset']['dvc_path']]
-        print(config['dataset']['dvc_path'])
-        subprocess.run(update_data, check=True)
+    print("\nChecking for updates to dataset using DVC...")
+    update_data = ["dvc", "pull", dvc_file]
+    print(dvc_file)
+    subprocess.run(update_data, check=True)
 
     # Extracts data from dataset with CIFAR10 datastructure
     trainset = torchvision.datasets.CIFAR10(
-        root=config['dataset']['data'], train=True, download=False, transform=transform
+        root=data_dir, train=True, download=False, transform=transform
     )
 
     # Splitting data into Training and validation

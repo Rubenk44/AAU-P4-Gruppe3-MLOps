@@ -25,12 +25,12 @@ def train(train_loader, val_loader, device, config):
     model = ImageNet().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = pick_optimizer(model, config)
+    num_batches = len(train_loader)
     scheduler = pick_scheduler(optimizer, config)
 
     for epoch in range(config['train']['epochs']):
         model.train()
         running_loss = 0.0
-        num_batches = len(train_loader)
 
         for i, (inputs, labels) in enumerate(train_loader):
             inputs, labels = inputs.to(device), labels.to(device)

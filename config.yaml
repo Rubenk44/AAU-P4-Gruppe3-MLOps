@@ -1,6 +1,6 @@
 dataset:
   data: ../AAU-P4-Gruppe3-MLOps/dataset
-  s3_path: s3://aaumlopsp4/Dataset/cifar-10-batches-py/
+  s3_path: s3://mlops-version-control/data/cifar-10-batches-py/
   dvc_path: ../AAU-P4-Gruppe3-MLOps/dataset/cifar-10-batches-py.dvc
   script_path: ../datasets/cifar10_keras.py
   
