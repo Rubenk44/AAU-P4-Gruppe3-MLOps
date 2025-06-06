@@ -1,0 +1,71 @@
+name: AI-LAB Model Training
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: 'Number of training epochs'
+        required: false
+        default: '10'
+        type: string
+
+jobs:
+  train-model:
+    runs-on: self-hosted
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        
+      - name: Get DVC data
+        run: |
+          echo "Pulling data from DVC"
+          dvc pull dataset/cifar-10-batches-py.dvc
+        continue-on-error: true
+        
+      - name: Setup Python environment
+        run: |
+          echo "Setting up Python environment"
+          sbatch --output=setup_output.txt --wrap="python -m pip install --upgrade pip && pip install -r requirements.txt"
+          sleep 5  # Wait for the batch job to start
+          cat setup_output.txt
+          
+      - name: Run model training
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+          AWS_public: ${{ secrets.AWS_PUBLIC_KEY }}
+        run: |
+          echo "Starting model training job"
+          # Modify epochs if provided via workflow_dispatch
+          if [ "${{ github.event.inputs.epochs }}" != "" ]; then
+            sed -i "s/epochs: 10/epochs: ${{ github.event.inputs.epochs }}/" config.yaml
+          fi
+          
+          # Submit training job to SLURM queue and wait for completion
+          sbatch --output=training_output.txt --wrap="python train.py"
+          echo "Job submitted, waiting for completion..."
+          
+          # Wait for the output file to be created and then monitor it
+          while [ ! -f training_output.txt ]; do sleep 5; done
+          tail -f training_output.txt &
+          
+          # Wait for the training to complete (look for "Finished Training" message)
+          while ! grep -q "Finished Training" training_output.txt; do
+            sleep 30
+            if grep -q "error" training_output.txt; then
+              echo "Error detected in training job"
+              cat training_output.txt
+              exit 1
+            fi
+          done
+          
+          echo "Training completed successfully!"
+          
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: trained-model
+          path: |
+            Model_*.onnx
+            Config_*.onnx.txt
