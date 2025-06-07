@@ -7,6 +7,7 @@ from unittest.mock import patch
 from torch.utils.data import DataLoader
 from utils.dataloader import add_transform, TransformSubset, data_load
 import torch.nn as nn
+from functools import partial
 
 
 # This allows bypassing DVC operations in CI environments
@@ -413,40 +414,46 @@ def create_mock_subset_for_data_load():
     return MockSubset
 
 
+def add_one(x):
+    return x + 1
+
+
+@pytest.fixture
+def base_config():
+    return {
+        'dataset': {
+            'version': 'original',
+            'paths': {
+                'original': {'local_path': '/fake/path'},
+                'augmented': {'local_path': '/fake/aug'},
+            },
+        },
+        'train': {'train_test_split': 0.8, 'batch_size': 4, 'num_workers': 0},
+        'data_augmentation': {
+            'resize': [32, 32],
+            'horizontal_flip': 0,
+            'vertical_flip': 0,
+            'brightness': 0,
+            'contrast': 0,
+            'saturation': 0,
+            'hue': 0,
+            'grayscale': 0,
+            'rotation': [0, 0],
+            'width_shift': 0,
+            'height_shift': 0,
+            'degrees': 0,
+            'distortion_scale': 0,
+        },
+    }
+
+
 class TestDataLoad:
-    @pytest.fixture
-    def base_config():
-        return {
-            'dataset': {
-                'version': 'original',
-                'paths': {
-                    'original': {'local_path': '/fake/path'},
-                    'augmented': {'local_path': '/fake/aug'},
-                },
-            },
-            'train': {'train_test_split': 0.8, 'batch_size': 4, 'num_workers': 0},
-            'data_augmentation': {
-                'resize': [32, 32],
-                'horizontal_flip': 0,
-                'vertical_flip': 0,
-                'brightness': 0,
-                'contrast': 0,
-                'saturation': 0,
-                'hue': 0,
-                'grayscale': 0,
-                'rotation': [0, 0],
-                'width_shift': 0,
-                'height_shift': 0,
-                'degrees': 0,
-                'distortion_scale': 0,
-            },
-        }
 
     @patch('utils.dataloader.CIFAR10')
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.os.listdir')
     def test_data_load_original(
-        mock_listdir, mock_random_split, mock_cifar10, base_config
+        self, mock_listdir, mock_random_split, mock_cifar10, base_config
     ):
         dummy_tensor = torch.randn(3, 32, 32)
         dummy_dataset = [(dummy_tensor, 0)] * 10
@@ -462,7 +469,7 @@ class TestDataLoad:
         batch = next(iter(train_loader))
         images, labels = batch
         assert images.shape[0] == base_config['train']['batch_size']
-        assert images.ndim == 4  # [B, C, H, W]
+        assert images.ndim == 4
         assert labels.ndim == 1
         assert isinstance(labels[0].item(), int)
 
@@ -470,7 +477,7 @@ class TestDataLoad:
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.os.listdir')
     def test_data_load_augmented(
-        mock_listdir, mock_random_split, mock_augmented, base_config
+        self, mock_listdir, mock_random_split, mock_augmented, base_config
     ):
         base_config['dataset']['version'] = 'augmented'
         dummy_tensor = torch.randn(3, 32, 32)
@@ -491,7 +498,7 @@ class TestDataLoad:
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.os.listdir')
     def test_data_load_calls_add_transform(
-        mock_listdir, mock_split, mock_cifar, mock_add, base_config
+        self, mock_listdir, mock_split, mock_cifar, mock_add, base_config
     ):
         dummy_tensor = torch.randn(3, 32, 32)
         dummy_dataset = [(dummy_tensor, 0)] * 10
@@ -505,28 +512,28 @@ class TestDataLoad:
         mock_add.assert_called_once()
 
     @patch('utils.dataloader.os.listdir', return_value=[])
-    def test_raises_if_dataset_folder_empty(mock_listdir, base_config):
+    def test_raises_if_dataset_folder_empty(self, mock_listdir, base_config):
         with pytest.raises(RuntimeError, match="Dataset folder '.+' is empty"):
             data_load(base_config)
 
-    def test_raises_if_version_missing(base_config):
+    def test_raises_if_version_missing(self, base_config):
         base_config['dataset']['version'] = 'nonexistent'
         with pytest.raises(ValueError, match="Unknown dataset version 'nonexistent'"):
             data_load(base_config)
 
-    def test_transform_subset_applies_transform():
+    def test_transform_subset_applies_transform(self):
         dummy_tensor = torch.ones(3, 32, 32)
         dummy_subset = [(dummy_tensor, 1)]
 
-        def custom_transform(x):
-            return x + 1  # simple test transform
+        transform = partial(add_one)
 
-        wrapped = TransformSubset(dummy_subset, transform=custom_transform)
+        wrapped = TransformSubset(dummy_subset, transform=transform)
         x, y = wrapped[0]
+
         assert torch.allclose(x, torch.full((3, 32, 32), 2.0))
         assert y == 1
 
-    def test_transform_subset_without_transform():
+    def test_transform_subset_without_transform(self):
         dummy_tensor = torch.ones(3, 32, 32)
         dummy_subset = [(dummy_tensor, 1)]
         wrapped = TransformSubset(dummy_subset, transform=None)
