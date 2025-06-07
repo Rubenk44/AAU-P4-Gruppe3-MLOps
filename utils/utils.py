@@ -63,6 +63,7 @@ def begin_wandb():
 
 
 def model_export(model, device, config):
+    model = model.float()
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     onnx_filename = f"Model_{timestamp}.onnx"
     config_filename = f"Config_{onnx_filename}.txt"

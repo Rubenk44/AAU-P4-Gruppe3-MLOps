@@ -4,7 +4,11 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 import os
 import subprocess
+import torch.distributed as dist
 
+
+def is_rank_0():
+    return not dist.is_initialized() or dist.get_rank() == 0
 
 def add_transform(config, train_subset):
     # missing centercrop from configuration file
@@ -25,7 +29,8 @@ def add_transform(config, train_subset):
         config['data_augmentation']['resize'][0] < 32
         or config['data_augmentation']['resize'][1] < 32
     ):
-        print("No resizing since minimum is 32x32")
+        if is_rank_0():
+            print("No resizing since minimum is 32x32")
     elif config['data_augmentation']['resize'] != [h, w]:
         train_trans.append(
             transforms.Resize(size=(config['data_augmentation']['resize']))
@@ -87,7 +92,8 @@ def add_transform(config, train_subset):
             )
         )
 
-    print(f"Following transformations have been added:{train_trans}")
+    if is_rank_0():
+        print(f"Following transformations have been added:{train_trans}")
 
     train_transform = transforms.Compose(
         [
