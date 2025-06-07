@@ -499,6 +499,7 @@ class TestDataLoad:
         mock_augmented_cifar_class,
     ):
         """Test data_load when data folder doesn't exist"""
+
         mock_train_loader = MagicMock()
         mock_val_loader = MagicMock()
         mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
@@ -531,11 +532,15 @@ class TestDataLoad:
         mock_exists.side_effect = [False, True]
         mock_listdir.return_value = ['some_file']
 
-        mock_dataset = MagicMock()
-        mock_dataset.__len__.return_value = 1000
-        mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
-        mock_cifar_class.return_value = mock_dataset
-        mock_augmented_cifar_class.return_value = mock_dataset
+        mock_tensor = torch.randn(3, 32, 32)
+
+        mock_cifar_instance = mock_cifar_class.return_value
+        mock_cifar_instance.__len__.return_value = 1000
+        mock_cifar_instance.__getitem__.return_value = (mock_tensor, 0)
+
+        mock_augmented_instance = mock_augmented_cifar_class.return_value
+        mock_augmented_instance.__len__.return_value = 1000
+        mock_augmented_instance.__getitem__.return_value = (mock_tensor, 0)
 
         mock_split.return_value = (MagicMock(), MagicMock())
         mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
@@ -608,11 +613,13 @@ def test_data_load_different_split_ratio(
     mock_exists.return_value = True
     mock_listdir.return_value = ['data']
 
-    mock_dataset = MagicMock()
-    mock_dataset.__len__.return_value = 1000
-    mock_dataset.__getitem__.return_value = (mock_tensor, 0)
-    mock_cifar_class.return_value = mock_dataset
-    mock_augmented_cifar_class.return_value = mock_dataset
+    mock_cifar_instance = mock_cifar_class.return_value
+    mock_cifar_instance.__len__.return_value = 1000
+    mock_cifar_instance.__getitem__.return_value = (mock_tensor, 0)
+
+    mock_augmented_instance = mock_augmented_cifar_class.return_value
+    mock_augmented_instance.__len__.return_value = 1000
+    mock_augmented_instance.__getitem__.return_value = (mock_tensor, 0)
 
     mock_train_subset = MagicMock()
     mock_train_subset.__len__.return_value = 700
@@ -627,6 +634,6 @@ def test_data_load_different_split_ratio(
         with patch('builtins.print'):
             train_loader, val_loader = data_load(config)
 
-    mock_split.assert_called_once_with(mock_dataset, [700, 300])
+    mock_split.assert_called_once_with(mock_cifar_instance, [700, 300])
     assert train_loader.batch_size == 16
     assert val_loader.batch_size == 16
