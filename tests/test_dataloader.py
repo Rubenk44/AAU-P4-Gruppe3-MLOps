@@ -415,11 +415,11 @@ def create_mock_subset_for_data_load():
 class TestDataLoad:
     """Test suite for data_load function"""
 
+    @patch('utils.dataloader.AugmentedCIFAR10')
+    @patch('torchvision.datasets.CIFAR10')
     @patch('os.listdir')
     @patch('os.path.exists')
     @patch('os.mkdir')
-    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
@@ -428,15 +428,15 @@ class TestDataLoad:
         mock_dataloader,
         mock_transform_subset,
         mock_split,
-        mock_cifar,
         mock_mkdir,
         mock_exists,
         mock_listdir,
+        mock_cifar,
+        mock_augmented_cifar,
     ):
         """Test data_load raises if dataset folder is empty and not downloaded"""
-        # Set up mocks
         mock_exists.return_value = True
-        mock_listdir.return_value = []  # Simulate empty folder
+        mock_listdir.return_value = []
 
         config = {
             'dataset': {
@@ -467,10 +467,10 @@ class TestDataLoad:
             with pytest.raises(RuntimeError, match="Dataset folder './data' is empty"):
                 data_load(config)
 
+    @patch('utils.dataloader.AugmentedCIFAR10')
+    @patch('torchvision.datasets.CIFAR10')
     @patch('os.listdir')
     @patch('os.path.exists')
-    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
@@ -479,13 +479,12 @@ class TestDataLoad:
         mock_dataloader,
         mock_transform_subset,
         mock_split,
-        mock_cifar,
         mock_exists,
         mock_listdir,
+        mock_cifar,
+        mock_augmented_cifar,
     ):
         """Test data_load when data folder exists and dataset is used directly"""
-
-        # Set up mock train/val loaders
         mock_train_loader = MagicMock()
         mock_val_loader = MagicMock()
         mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
@@ -515,41 +514,17 @@ class TestDataLoad:
             },
         }
 
-        # Create mock tensor and mock folder state
-        mock_tensor = torch.randn(3, 32, 32)
         mock_exists.return_value = True
         mock_listdir.return_value = ['file1.pkl']
 
-        # Patch CIFAR10 mock and bypass integrity check
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
         mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
         mock_cifar.return_value = mock_dataset
+        mock_augmented_cifar.return_value = mock_dataset
 
-        # Mock random_split
-        mock_train_subset = MagicMock()
-        mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
-        mock_train_subset.__len__.return_value = 800
-
-        mock_val_subset = MagicMock()
-        mock_val_subset.__getitem__.return_value = (mock_tensor, 0)
-        mock_val_subset.__len__.return_value = 200
-
-        mock_split.return_value = (mock_train_subset, mock_val_subset)
-
-        # Mock TransformSubset
-        mock_transformed_subset1 = MagicMock()
-        mock_transformed_subset1.__getitem__.return_value = (mock_tensor, 0)
-        mock_transformed_subset1.__len__.return_value = 800
-
-        mock_transformed_subset2 = MagicMock()
-        mock_transformed_subset2.__getitem__.return_value = (mock_tensor, 0)
-        mock_transformed_subset2.__len__.return_value = 200
-
-        mock_transform_subset.side_effect = [
-            mock_transformed_subset1,
-            mock_transformed_subset2,
-        ]
+        mock_split.return_value = (MagicMock(), MagicMock())
+        mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
 
         with patch('utils.dataloader.add_transform') as mock_add_transform:
             mock_add_transform.return_value = (
@@ -561,11 +536,11 @@ class TestDataLoad:
 
         assert mock_dataloader.call_count == 2
 
+    @patch('utils.dataloader.AugmentedCIFAR10')
+    @patch('torchvision.datasets.CIFAR10')
     @patch('os.listdir')
     @patch('os.path.exists')
     @patch('os.mkdir')
-    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
@@ -574,14 +549,13 @@ class TestDataLoad:
         mock_dataloader,
         mock_transform_subset,
         mock_split,
-        mock_cifar,
         mock_mkdir,
         mock_exists,
         mock_listdir,
+        mock_cifar,
+        mock_augmented_cifar,
     ):
         """Test data_load when data folder doesn't exist"""
-
-        # Setup mock DataLoader to return mock loaders
         mock_train_loader = MagicMock()
         mock_val_loader = MagicMock()
         mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
@@ -611,43 +585,17 @@ class TestDataLoad:
             },
         }
 
-        mock_tensor = torch.randn(3, 32, 32)
+        mock_exists.side_effect = [False, True]
+        mock_listdir.return_value = ['some_file']
 
-        mock_exists.side_effect = [
-            False,
-            True,
-        ]  # Simulate folder not existing, then existing
-        mock_listdir.return_value = ['some_file']  # Simulate non-empty folder
-
-        # Setup CIFAR10 mock
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
         mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
         mock_cifar.return_value = mock_dataset
+        mock_augmented_cifar.return_value = mock_dataset
 
-        # Setup dataset split
-        mock_train_subset = MagicMock()
-        mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
-        mock_train_subset.__len__.return_value = 800
-
-        mock_val_subset = MagicMock()
-        mock_val_subset.__getitem__.return_value = (mock_tensor, 0)
-        mock_val_subset.__len__.return_value = 200
-
-        mock_split.return_value = (mock_train_subset, mock_val_subset)
-
-        mock_transformed_subset1 = MagicMock()
-        mock_transformed_subset1.__getitem__.return_value = (mock_tensor, 0)
-        mock_transformed_subset1.__len__.return_value = 800
-
-        mock_transformed_subset2 = MagicMock()
-        mock_transformed_subset2.__getitem__.return_value = (mock_tensor, 0)
-        mock_transformed_subset2.__len__.return_value = 200
-
-        mock_transform_subset.side_effect = [
-            mock_transformed_subset1,
-            mock_transformed_subset2,
-        ]
+        mock_split.return_value = (MagicMock(), MagicMock())
+        mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
 
         with patch('utils.dataloader.add_transform') as mock_add_transform:
             mock_add_transform.return_value = (
@@ -657,17 +605,14 @@ class TestDataLoad:
             with patch('builtins.print'):
                 train_loader, val_loader = data_load(config)
 
-        # Check folder was created
         mock_mkdir.assert_called_once_with('./data')
-
-        # Check DataLoader was used
         assert mock_dataloader.call_count == 2
 
 
+@patch('utils.dataloader.AugmentedCIFAR10')
+@patch('torchvision.datasets.CIFAR10')
 @patch('os.listdir')
 @patch('os.path.exists')
-@patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-@patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
 @patch('utils.dataloader.random_split')
 @patch('utils.dataloader.TransformSubset')
 @patch('utils.dataloader.DataLoader')
@@ -675,12 +620,12 @@ def test_data_load_different_split_ratio(
     mock_dataloader,
     mock_transform_subset,
     mock_split,
-    mock_cifar,
     mock_exists,
     mock_listdir,
+    mock_cifar,
+    mock_augmented_cifar,
 ):
     """Test data_load with different train/test split ratio"""
-
     mock_train_loader = MagicMock()
     mock_train_loader.batch_size = 16
     mock_val_loader = MagicMock()
@@ -692,11 +637,7 @@ def test_data_load_different_split_ratio(
             'version': 'original',
             'paths': {'original': {'dvc_target': './data.dvc', 'local_path': './data'}},
         },
-        'train': {
-            'train_test_split': 0.7,  # 70/30 split
-            'batch_size': 16,
-            'num_workers': 4,
-        },
+        'train': {'train_test_split': 0.7, 'batch_size': 16, 'num_workers': 4},
         'data_augmentation': {
             'resize': [32, 32],
             'horizontal_flip': 0,
@@ -720,43 +661,24 @@ def test_data_load_different_split_ratio(
 
     mock_dataset = MagicMock()
     mock_dataset.__len__.return_value = 1000
-    mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
+    mock_dataset.__getitem__.return_value = (mock_tensor, 0)
     mock_cifar.return_value = mock_dataset
+    mock_augmented_cifar.return_value = mock_dataset
 
     mock_train_subset = MagicMock()
-    mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
     mock_train_subset.__len__.return_value = 700
-
     mock_val_subset = MagicMock()
-    mock_val_subset.__getitem__.return_value = (mock_tensor, 0)
     mock_val_subset.__len__.return_value = 300
 
     mock_split.return_value = (mock_train_subset, mock_val_subset)
 
-    mock_transformed_subset1 = MagicMock()
-    mock_transformed_subset1.__getitem__.return_value = (mock_tensor, 0)
-    mock_transformed_subset1.__len__.return_value = 700
-
-    mock_transformed_subset2 = MagicMock()
-    mock_transformed_subset2.__getitem__.return_value = (mock_tensor, 0)
-    mock_transformed_subset2.__len__.return_value = 300
-
-    mock_transform_subset.side_effect = [
-        mock_transformed_subset1,
-        mock_transformed_subset2,
-    ]
+    mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
 
     with patch('utils.dataloader.add_transform') as mock_add_transform:
-        mock_add_transform.return_value = (
-            transforms.ToTensor(),
-            transforms.ToTensor(),
-        )
+        mock_add_transform.return_value = (transforms.ToTensor(), transforms.ToTensor())
         with patch('builtins.print'):
             train_loader, val_loader = data_load(config)
 
-    # Check that the split is 700/300 as per the ratio
     mock_split.assert_called_once_with(mock_dataset, [700, 300])
-
-    # Check that batch sizes are correct
     assert train_loader.batch_size == 16
     assert val_loader.batch_size == 16
