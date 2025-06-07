@@ -537,10 +537,12 @@ class TestDataLoad:
         mock_cifar_instance = mock_cifar_class.return_value
         mock_cifar_instance.__len__.return_value = 1000
         mock_cifar_instance.__getitem__.return_value = (mock_tensor, 0)
+        mock_cifar_instance.data = [mock_tensor] * 1000
 
         mock_augmented_instance = mock_augmented_cifar_class.return_value
         mock_augmented_instance.__len__.return_value = 1000
         mock_augmented_instance.__getitem__.return_value = (mock_tensor, 0)
+        mock_augmented_instance.data = [mock_tensor] * 1000
 
         mock_split.return_value = (MagicMock(), MagicMock())
         mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
@@ -616,10 +618,12 @@ def test_data_load_different_split_ratio(
     mock_cifar_instance = mock_cifar_class.return_value
     mock_cifar_instance.__len__.return_value = 1000
     mock_cifar_instance.__getitem__.return_value = (mock_tensor, 0)
+    mock_cifar_instance.data = [mock_tensor] * 1000
 
     mock_augmented_instance = mock_augmented_cifar_class.return_value
     mock_augmented_instance.__len__.return_value = 1000
     mock_augmented_instance.__getitem__.return_value = (mock_tensor, 0)
+    mock_augmented_instance.data = [mock_tensor] * 1000
 
     mock_train_subset = MagicMock()
     mock_train_subset.__len__.return_value = 700
