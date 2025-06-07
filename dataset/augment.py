@@ -3,9 +3,10 @@ import pickle
 import numpy as np
 from torchvision import transforms
 from tqdm import tqdm
+import shutil
 
-input_dir = "dataset/cifar-10-batches-py"
-output_dir = "dataset/cifar-10-augmented"
+input_dir = "dataset/original_data/cifar-10-batches-py"
+output_dir = "dataset/augmented_data/cifar-10-batches-py"
 
 os.makedirs(output_dir, exist_ok=True)
 
@@ -29,15 +30,17 @@ def save_batch(data_dict, path):
         pickle.dump(data_dict, f)
 
 
-# Process each batch file
+# Process each training batch
 for fname in tqdm(os.listdir(input_dir)):
+    input_path = os.path.join(input_dir, fname)
+
+    # Only augment the data batches, not meta/test
     if fname.startswith("data_batch"):
-        batch_path = os.path.join(input_dir, fname)
-        data_dict = load_batch(batch_path)
+        data_dict = load_batch(input_path)
         images = data_dict[b'data']
         labels = data_dict[b'labels']
 
-        # CIFAR-10: (N, 3072) → (N, 3, 32, 32)
+        # Reshape and augment
         images = images.reshape(-1, 3, 32, 32)
         augmented = []
 
@@ -50,13 +53,17 @@ for fname in tqdm(os.listdir(input_dir)):
 
         augmented = np.stack(augmented).reshape(-1, 3072)
         new_batch = {
-            b'data': augmented,
-            b'labels': labels,
-            b'filenames': data_dict.get(b'filenames', []),
-            b'batch_label': data_dict.get(b'batch_label', b"augmented"),
+            "data": augmented,
+            "labels": labels,
+            "filenames": [
+                fn.decode() if isinstance(fn, bytes) else fn
+                for fn in data_dict.get(b'filenames', [])
+            ],
+            "batch_label": data_dict.get(b'batch_label', b"augmented").decode(),
         }
 
-        out_path = os.path.join(output_dir, fname)
-        save_batch(new_batch, out_path)
+        save_batch(new_batch, os.path.join(output_dir, fname))
 
-print("✅ Augmentation complete.")
+    elif fname in ["batches.meta", "test_batch"]:
+        # Just copy unmodified
+        shutil.copy(input_path, os.path.join(output_dir, fname))

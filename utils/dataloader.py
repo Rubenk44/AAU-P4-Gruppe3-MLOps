@@ -1,10 +1,9 @@
 import torch
-import torchvision
+from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
-
-# import os
-# import subprocess
+import os
+import subprocess
 
 
 def add_transform(config, train_subset):
@@ -121,14 +120,19 @@ class TransformSubset(torch.utils.data.Dataset):
         return len(self.subset)
 
 
+class AugmentedCIFAR10(CIFAR10):
+    def __init__(self, *args, force_load=False, **kwargs):
+        self.force_load = force_load
+        super().__init__(*args, **kwargs)
+
+    def _check_integrity(self):
+        if self.force_load:
+            return True
+        return super()._check_integrity()
+
+
 def data_load(config):
     transform = transforms.ToTensor()
-
-    #   print(
-    #      "remember to run aws configure in terminal and setup credentials"
-    # )  # print kun når der er error
-    # Download dataset
-    # check for data folder if not make one
 
     version = config['dataset'].get('version', 'original')
     version_paths = config['dataset']['paths'].get(version)
@@ -136,22 +140,31 @@ def data_load(config):
     if not version_paths:
         raise ValueError(f"Unknown dataset version '{version}' in config.yaml.")
 
-    #  dvc_target = version_paths['dvc_target']
-    # dataset_path = version_paths['local_path']
+    dvc_target = version_paths['dvc_target']
+    dataset_path = version_paths['local_path']
 
-    #  if not os.listdir(dataset_path):
-    #  raise RuntimeError(f"Dataset folder '{dataset_path}' is empty after DVC pull.")
+    if not os.listdir(dataset_path):
+        raise RuntimeError(f"Dataset folder '{dataset_path}' is empty after DVC pull.")
 
     print(f"\nPulling '{version}' dataset using DVC...")
-    # subprocess.run(["dvc", "pull", dvc_target], check=True)
+    subprocess.run(["dvc", "pull", dvc_target], check=True)
 
     # Extracts data from dataset with CIFAR10 datastructure
-    trainset = torchvision.datasets.CIFAR10(
-        root="dataset/cifar-10-batches-py",
-        train=True,
-        download=False,
-        transform=transform,
-    )
+    if version == "original":
+        trainset = CIFAR10(
+            root=dataset_path,
+            train=True,
+            download=False,
+            transform=transform,
+        )
+    else:
+        trainset = AugmentedCIFAR10(
+            root=dataset_path,
+            train=True,
+            download=False,
+            transform=transform,
+            force_load=True,
+        )
 
     # Splitting data into Training and validation
     train_size = int(config['train']['train_test_split'] * len(trainset))
