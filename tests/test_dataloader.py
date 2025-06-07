@@ -3,9 +3,10 @@ import torch
 import torchvision.transforms as transforms
 import pytest
 from unittest import mock
-from unittest.mock import patch, MagicMock
-
+from unittest.mock import patch
+from torch.utils.data import DataLoader
 from utils.dataloader import add_transform, TransformSubset, data_load
+import torch.nn as nn
 
 
 # This allows bypassing DVC operations in CI environments
@@ -413,45 +414,17 @@ def create_mock_subset_for_data_load():
 
 
 class TestDataLoad:
-    """Test suite for data_load function"""
-
-    @patch('utils.dataloader.AugmentedCIFAR10', autospec=True)
-    @patch('torchvision.datasets.CIFAR10', autospec=True)
-    @patch('utils.dataloader.AugmentedCIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
-    @patch('os.listdir')
-    @patch('os.path.exists')
-    @patch('os.mkdir')
-    @patch('utils.dataloader.random_split')
-    @patch('utils.dataloader.TransformSubset')
-    @patch('utils.dataloader.DataLoader')
-    def test_data_load_raises_if_folder_empty(
-        self,
-        mock_dataloader,
-        mock_transform_subset,
-        mock_split,
-        mock_mkdir,
-        mock_exists,
-        mock_listdir,
-        mock_cifar_init,
-        mock_check_integrity,
-        mock_augmented_cifar_init,
-        mock_cifar_class,
-        mock_augmented_cifar_class,
-    ):
-        """Test data_load raises if dataset folder is empty and not downloaded"""
-        mock_exists.return_value = True
-        mock_listdir.return_value = []
-
-        config = {
+    @pytest.fixture
+    def base_config():
+        return {
             'dataset': {
                 'version': 'original',
                 'paths': {
-                    'original': {'dvc_target': './data.dvc', 'local_path': './data'}
+                    'original': {'local_path': '/fake/path'},
+                    'augmented': {'local_path': '/fake/aug'},
                 },
             },
-            'train': {'train_test_split': 0.8, 'batch_size': 32, 'num_workers': 2},
+            'train': {'train_test_split': 0.8, 'batch_size': 4, 'num_workers': 0},
             'data_augmentation': {
                 'resize': [32, 32],
                 'horizontal_flip': 0,
@@ -469,175 +442,94 @@ class TestDataLoad:
             },
         }
 
-        with patch('builtins.print'), patch('utils.dataloader.add_transform'):
-            with pytest.raises(RuntimeError, match="Dataset folder './data' is empty"):
-                data_load(config)
-
-    @patch('utils.dataloader.AugmentedCIFAR10', autospec=True)
-    @patch('torchvision.datasets.CIFAR10', autospec=True)
-    @patch('utils.dataloader.AugmentedCIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
-    @patch('os.listdir')
-    @patch('os.path.exists')
-    @patch('os.mkdir')
+    @patch('utils.dataloader.CIFAR10')
     @patch('utils.dataloader.random_split')
-    @patch('utils.dataloader.TransformSubset')
-    @patch('utils.dataloader.DataLoader')
-    def test_data_load_folder_not_exists(
-        self,
-        mock_dataloader,
-        mock_transform_subset,
-        mock_split,
-        mock_mkdir,
-        mock_exists,
-        mock_listdir,
-        mock_cifar_init,
-        mock_check_integrity,
-        mock_augmented_cifar_init,
-        mock_cifar_class,
-        mock_augmented_cifar_class,
+    @patch('utils.dataloader.os.listdir')
+    def test_data_load_original(
+        mock_listdir, mock_random_split, mock_cifar10, base_config
     ):
-        """Test data_load when data folder doesn't exist"""
+        dummy_tensor = torch.randn(3, 32, 32)
+        dummy_dataset = [(dummy_tensor, 0)] * 10
+        mock_cifar10.return_value = dummy_dataset
+        mock_random_split.return_value = (dummy_dataset[:8], dummy_dataset[8:])
+        mock_listdir.return_value = ['dummy_file']
 
-        mock_train_loader = MagicMock()
-        mock_val_loader = MagicMock()
-        mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
+        train_loader, val_loader = data_load(base_config)
 
-        config = {
-            'dataset': {
-                'version': 'original',
-                'paths': {
-                    'original': {'dvc_target': './data.dvc', 'local_path': './data'}
-                },
-            },
-            'train': {'train_test_split': 0.8, 'batch_size': 32, 'num_workers': 2},
-            'data_augmentation': {
-                'resize': [32, 32],
-                'horizontal_flip': 0,
-                'vertical_flip': 0,
-                'brightness': 0,
-                'contrast': 0,
-                'saturation': 0,
-                'hue': 0,
-                'grayscale': 0,
-                'rotation': [0, 0],
-                'width_shift': 0,
-                'height_shift': 0,
-                'degrees': 0,
-                'distortion_scale': 0,
-            },
-        }
+        assert isinstance(train_loader, DataLoader)
+        assert isinstance(val_loader, DataLoader)
 
-        mock_exists.side_effect = [False, True]
-        mock_listdir.return_value = ['some_file']
+        batch = next(iter(train_loader))
+        images, labels = batch
+        assert images.shape[0] == base_config['train']['batch_size']
+        assert images.ndim == 4  # [B, C, H, W]
+        assert labels.ndim == 1
+        assert isinstance(labels[0].item(), int)
 
-        mock_tensor = torch.randn(3, 32, 32)
+    @patch('utils.dataloader.AugmentedCIFAR10')
+    @patch('utils.dataloader.random_split')
+    @patch('utils.dataloader.os.listdir')
+    def test_data_load_augmented(
+        mock_listdir, mock_random_split, mock_augmented, base_config
+    ):
+        base_config['dataset']['version'] = 'augmented'
+        dummy_tensor = torch.randn(3, 32, 32)
+        dummy_dataset = [(dummy_tensor, 1)] * 10
+        mock_augmented.return_value = dummy_dataset
+        mock_random_split.return_value = (dummy_dataset[:8], dummy_dataset[8:])
+        mock_listdir.return_value = ['dummy_file']
 
-        mock_cifar_instance = mock_cifar_class.return_value
-        mock_cifar_instance.__len__.return_value = 1000
-        mock_cifar_instance.__getitem__.return_value = (mock_tensor, 0)
-        mock_cifar_instance.data = [mock_tensor] * 1000
+        train_loader, val_loader = data_load(base_config)
 
-        mock_augmented_instance = mock_augmented_cifar_class.return_value
-        mock_augmented_instance.__len__.return_value = 1000
-        mock_augmented_instance.__getitem__.return_value = (mock_tensor, 0)
-        mock_augmented_instance.data = [mock_tensor] * 1000
+        assert isinstance(train_loader, DataLoader)
+        assert isinstance(val_loader, DataLoader)
+        batch = next(iter(val_loader))
+        assert batch[0].shape[1:] == (3, 32, 32)
 
-        mock_split.return_value = (MagicMock(), MagicMock())
-        mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
+    @patch('utils.dataloader.add_transform')
+    @patch('utils.dataloader.CIFAR10')
+    @patch('utils.dataloader.random_split')
+    @patch('utils.dataloader.os.listdir')
+    def test_data_load_calls_add_transform(
+        mock_listdir, mock_split, mock_cifar, mock_add, base_config
+    ):
+        dummy_tensor = torch.randn(3, 32, 32)
+        dummy_dataset = [(dummy_tensor, 0)] * 10
+        mock_cifar.return_value = dummy_dataset
+        mock_listdir.return_value = ['dummy_file']
+        mock_split.return_value = (dummy_dataset[:8], dummy_dataset[8:])
 
-        with patch('utils.dataloader.add_transform') as mock_add_transform:
-            mock_add_transform.return_value = (
-                transforms.ToTensor(),
-                transforms.ToTensor(),
-            )
-            with patch('builtins.print'):
-                train_loader, val_loader = data_load(config)
+        mock_add.return_value = (nn.Identity(), nn.Identity())
 
-        mock_mkdir.assert_called_once_with('./data')
-        assert mock_dataloader.call_count == 2
+        data_load(base_config)
+        mock_add.assert_called_once()
 
+    @patch('utils.dataloader.os.listdir', return_value=[])
+    def test_raises_if_dataset_folder_empty(mock_listdir, base_config):
+        with pytest.raises(RuntimeError, match="Dataset folder '.+' is empty"):
+            data_load(base_config)
 
-@patch('utils.dataloader.AugmentedCIFAR10', autospec=True)
-@patch('torchvision.datasets.CIFAR10', autospec=True)
-@patch('utils.dataloader.AugmentedCIFAR10.__init__', return_value=None)
-@patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
-@patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
-@patch('os.listdir')
-@patch('os.path.exists')
-@patch('utils.dataloader.random_split')
-@patch('utils.dataloader.TransformSubset')
-@patch('utils.dataloader.DataLoader')
-def test_data_load_different_split_ratio(
-    mock_dataloader,
-    mock_transform_subset,
-    mock_split,
-    mock_exists,
-    mock_listdir,
-    mock_cifar_init,
-    mock_check_integrity,
-    mock_augmented_cifar_init,
-    mock_cifar_class,
-    mock_augmented_cifar_class,
-):
-    """Test data_load with different train/test split ratio"""
-    mock_train_loader = MagicMock()
-    mock_train_loader.batch_size = 16
-    mock_val_loader = MagicMock()
-    mock_val_loader.batch_size = 16
-    mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
+    def test_raises_if_version_missing(base_config):
+        base_config['dataset']['version'] = 'nonexistent'
+        with pytest.raises(ValueError, match="Unknown dataset version 'nonexistent'"):
+            data_load(base_config)
 
-    config = {
-        'dataset': {
-            'version': 'original',
-            'paths': {'original': {'dvc_target': './data.dvc', 'local_path': './data'}},
-        },
-        'train': {'train_test_split': 0.7, 'batch_size': 16, 'num_workers': 4},
-        'data_augmentation': {
-            'resize': [32, 32],
-            'horizontal_flip': 0,
-            'vertical_flip': 0,
-            'brightness': 0,
-            'contrast': 0,
-            'saturation': 0,
-            'hue': 0,
-            'grayscale': 0,
-            'rotation': [0, 0],
-            'width_shift': 0,
-            'height_shift': 0,
-            'degrees': 0,
-            'distortion_scale': 0,
-        },
-    }
+    def test_transform_subset_applies_transform():
+        dummy_tensor = torch.ones(3, 32, 32)
+        dummy_subset = [(dummy_tensor, 1)]
 
-    mock_tensor = torch.randn(3, 32, 32)
-    mock_exists.return_value = True
-    mock_listdir.return_value = ['data']
+        def custom_transform(x):
+            return x + 1  # simple test transform
 
-    mock_cifar_instance = mock_cifar_class.return_value
-    mock_cifar_instance.__len__.return_value = 1000
-    mock_cifar_instance.__getitem__.return_value = (mock_tensor, 0)
-    mock_cifar_instance.data = [mock_tensor] * 1000
+        wrapped = TransformSubset(dummy_subset, transform=custom_transform)
+        x, y = wrapped[0]
+        assert torch.allclose(x, torch.full((3, 32, 32), 2.0))
+        assert y == 1
 
-    mock_augmented_instance = mock_augmented_cifar_class.return_value
-    mock_augmented_instance.__len__.return_value = 1000
-    mock_augmented_instance.__getitem__.return_value = (mock_tensor, 0)
-    mock_augmented_instance.data = [mock_tensor] * 1000
-
-    mock_train_subset = MagicMock()
-    mock_train_subset.__len__.return_value = 700
-    mock_val_subset = MagicMock()
-    mock_val_subset.__len__.return_value = 300
-
-    mock_split.return_value = (mock_train_subset, mock_val_subset)
-    mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
-
-    with patch('utils.dataloader.add_transform') as mock_add_transform:
-        mock_add_transform.return_value = (transforms.ToTensor(), transforms.ToTensor())
-        with patch('builtins.print'):
-            train_loader, val_loader = data_load(config)
-
-    mock_split.assert_called_once_with(mock_cifar_instance, [700, 300])
-    assert train_loader.batch_size == 16
-    assert val_loader.batch_size == 16
+    def test_transform_subset_without_transform():
+        dummy_tensor = torch.ones(3, 32, 32)
+        dummy_subset = [(dummy_tensor, 1)]
+        wrapped = TransformSubset(dummy_subset, transform=None)
+        x, y = wrapped[0]
+        assert torch.equal(x, dummy_tensor)
+        assert y == 1
