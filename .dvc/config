@@ -1,4 +1,5 @@
-[core]
-    remote = myremote
-['remote "myremote"']
+[remote "dataremote"]
     url = s3://mlops-version-control/data
+
+[remote "modelremote"]
+    url = s3://mlops-version-control/models

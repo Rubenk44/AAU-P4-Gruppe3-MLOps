@@ -3,7 +3,6 @@ from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 import os
-import subprocess
 
 
 def add_transform(config, train_subset):
@@ -144,15 +143,12 @@ def data_load(config):
 
     if not version_paths:
         raise ValueError(f"Unknown dataset version '{version}' in config.yaml.")
-
-    dvc_target = version_paths['dvc_target']
     dataset_path = version_paths['local_path']
 
-    print(f"\nPulling '{version}' dataset using DVC...")
-    subprocess.run(["dvc", "pull", dvc_target], check=True)
-
     if not os.listdir(dataset_path):
-        raise RuntimeError(f"Dataset folder '{dataset_path}' is empty after DVC pull.")
+        raise RuntimeError(
+            f"Dataset folder '{dataset_path}' is empty. Run `dvc pull` manually."
+        )
 
     # Extracts data from dataset with CIFAR10 datastructure
     if version == "original":
