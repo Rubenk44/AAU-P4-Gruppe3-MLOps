@@ -108,3 +108,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# This script is designed to train a neural network model on the ImageNet dataset.

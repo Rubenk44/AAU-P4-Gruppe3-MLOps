@@ -23,7 +23,10 @@ def device_conf():
 def load_config(config_path):
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
-    print("Config loaded from file:", config.get("dataset", "Unknown Dataset"))
+    if config is None:
+        print("Config loaded from file:", "Unknown Dataset")
+    else:
+        print("Config loaded from file:", config.get("dataset", "Unknown Dataset"))
     return config
 
 
@@ -59,6 +62,7 @@ def begin_wandb():
 
 
 def model_export(model, device, config):
+    model = model.float()
     onnx_filename = "models/Model_latest.onnx"
     config_filename = "models/Config_latest.json"
 
