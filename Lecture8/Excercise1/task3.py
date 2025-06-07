@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--replay-mem-size', type=int, default=500)
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--use-cuda', action='store_true')
-    parser.add_argument('--wandb-project', type=str, default="continual-mnist")
+    parser.add_argument('--wandb-project', type=str, default="MLOps")
     parser.add_argument('--wandb-run-name', type=str, default=None)
     args = parser.parse_args()
 

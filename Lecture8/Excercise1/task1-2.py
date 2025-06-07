@@ -222,9 +222,9 @@ def main():
         wandb.log(
             {
                 "Task 2 Epoch (Forgetting)": epoch,
-                "Accuracy 0-4(Forgetting)": acc_0_4,
+                "Accuracy 0-4 (Forgetting)": acc_0_4,
                 "Loss 0-4": loss_0_4,
-                "Accuracy 5-9": acc_5_9,
+                "Accuracy 5-9 (Forgetting)": acc_5_9,
                 "Loss 5-9": loss_5_9,
             }
         )
