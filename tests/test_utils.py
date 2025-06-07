@@ -127,6 +127,7 @@ def test_load_config_without_dataset_name(tmp_path):
         yaml.dump(config_content, f)
 
     with mock.patch('builtins.print') as mock_print:
+        load_config(config_path)
         mock_print.assert_called_with("Config loaded from file:", "Unknown Dataset")
 
 

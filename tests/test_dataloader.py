@@ -423,6 +423,7 @@ class TestDataLoad:
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
     def test_data_load_raises_if_folder_empty(
+        self,
         mock_dataloader,
         mock_transform_subset,
         mock_split,
@@ -472,6 +473,7 @@ class TestDataLoad:
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
     def test_data_load_existing_data_update(
+        self,
         mock_dataloader,
         mock_transform_subset,
         mock_split,
@@ -565,6 +567,7 @@ class TestDataLoad:
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
     def test_data_load_folder_not_exists(
+        self,
         mock_dataloader,
         mock_transform_subset,
         mock_split,
@@ -714,7 +717,7 @@ def test_data_load_different_split_ratio(
     mock_dataset = MagicMock()
     mock_dataset.__len__.return_value = 1000
     mock_dataset._check_integrity.return_value = True
-    mock_cifar.return_value = mock_dataset
+    mock_cifar.side_effect = lambda *args, **kwargs: mock_dataset
 
     mock_train_subset = MagicMock()
     mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
