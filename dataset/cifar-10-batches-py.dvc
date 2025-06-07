@@ -1,0 +1,6 @@
+outs:
+- md5: 6812e77563f448a7e627ca6fb05e810b.dir
+  size: 186217446
+  nfiles: 9
+  hash: md5
+  path: cifar-10-batches-py
