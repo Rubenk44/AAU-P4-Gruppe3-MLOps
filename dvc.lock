@@ -1,0 +1,56 @@
+schema: '2.0'
+stages:
+  augment:
+    cmd: python dataset/augment.py
+    deps:
+    - path: dataset/augment.py
+      hash: md5
+      md5: e978a10dce429c4c0085b68f706fa246
+      size: 1977
+    - path: dataset/original_data/cifar-10-batches-py
+      hash: md5
+      md5: 2c2c368a819f1df18fd0afa1c052c6c4.dir
+      size: 186214114
+      nfiles: 8
+    outs:
+    - path: dataset/augmented_data/cifar-10-batches-py
+      hash: md5
+      md5: 92e54f98fe9d2c7159ae3c5668728b7b.dir
+      size: 186017936
+      nfiles: 7
+  model_org:
+    cmd: python train.py
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: 61b020b029e74eb302eb2e4ba1b72cc7
+      size: 1192
+    - path: modelstructure.py
+      hash: md5
+      md5: 12aa8672989b76511d1434707b594549
+      size: 912
+    - path: requirements.txt
+      hash: md5
+      md5: 24262a50f9fc3e1429f03362d18ec43d
+      size: 175
+    - path: train.py
+      hash: md5
+      md5: 9eb31b686fbb3179e7f72e2e93454ff1
+      size: 2891
+    - path: utils/dataloader.py
+      hash: md5
+      md5: e67078223fe3492a5945a5b95fcd6d23
+      size: 6055
+    - path: utils/utils.py
+      hash: md5
+      md5: ad84eb15f73afce65d374c3f6c9cf0fd
+      size: 2166
+    outs:
+    - path: models/Config_latest.json
+      hash: md5
+      md5: e887a28d781bcaaa313f712b13d0f605
+      size: 2215
+    - path: models/Model_latest.onnx
+      hash: md5
+      md5: 309725421f6df4e6e08d392a31e6ad53
+      size: 250384

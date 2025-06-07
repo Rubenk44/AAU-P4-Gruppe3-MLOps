@@ -1,29 +1,46 @@
 dataset:
-  data: ../AAU-P4-Gruppe3-MLOps/dataset
-  s3_path: s3://aaumlopsp4/Dataset/cifar-10-batches-py/
-  dvc_path: ../AAU-P4-Gruppe3-MLOps/dataset/cifar-10-batches-py.dvc
-  script_path: ../datasets/cifar10_keras.py
+  version: original 
+  paths:
+    original:
+      dvc_target: dataset/original_data/cifar-10-batches-py.dvc
+      local_path: dataset/original_data
+    augmented:
+      dvc_target: dataset/augmented_data/cifar-10-batches-py
+      local_path: dataset/augmented_data
+
   
 
 model:
-  script_path: ../models/optimized.py
+  script_path: models/optimized.py
 
 wandb:
-    project: MLOps
+  project: MLOps
 
 train:
-  script_path: ../train/train_keras.py
-  artifacts_path: ../artifacts/cifar10_opt/
+  script_path: train/train_keras.py
+  artifacts_path: artifacts/cifar10_opt/
   train_test_split: 0.8
   batch_size: 32
-  epochs: 10
-  lr: 0.001
+  epochs: 100
+  lr: 0.0001
   gamma: 0.5
   step_size: 5
   scheduler: steplr
   optimizer: adam
   num_workers: 1
-  
+
+deepspeed:
+  train_batch_size: 64
+  gradient_accumulation_steps: 1
+  zero_optimization:
+    stage: 3
+    offload_optimizer:
+      device: none
+    offload_param:
+      device: none
+  fp16:
+    enabled: true
+
 data_augmentation:
   horizontal_flip: 0
   vertical_flip: 0
@@ -39,7 +56,7 @@ data_augmentation:
   distortion_scale: 0
   resize: [32, 32]
 
-  experiments:
+experiments:
   - name: experiment_1
     optimizer:
       initial_lr: 0.0001
@@ -60,5 +77,3 @@ data_augmentation:
     train:
       batch_size: 32
       epochs: 1500
-
-  

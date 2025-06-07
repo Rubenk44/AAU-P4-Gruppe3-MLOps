@@ -1,9 +1,13 @@
 import torch
-import torchvision
+from torchvision.datasets import CIFAR10
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
 import os
-import subprocess
+import torch.distributed as dist
+
+
+def is_rank_0():
+    return not dist.is_initialized() or dist.get_rank() == 0
 
 
 def add_transform(config, train_subset):
@@ -25,7 +29,8 @@ def add_transform(config, train_subset):
         config['data_augmentation']['resize'][0] < 32
         or config['data_augmentation']['resize'][1] < 32
     ):
-        print("No resizing since minimum is 32x32")
+        if is_rank_0():
+            print("No resizing since minimum is 32x32")
     elif config['data_augmentation']['resize'] != [h, w]:
         train_trans.append(
             transforms.Resize(size=(config['data_augmentation']['resize']))
@@ -87,7 +92,8 @@ def add_transform(config, train_subset):
             )
         )
 
-    print(f"Following transformations have been added:{train_trans}")
+    if is_rank_0():
+        print(f"Following transformations have been added:{train_trans}")
 
     train_transform = transforms.Compose(
         [
@@ -120,40 +126,53 @@ class TransformSubset(torch.utils.data.Dataset):
         return len(self.subset)
 
 
+class AugmentedCIFAR10(CIFAR10):
+    """
+    CIFAR10 loader that skips MD5 checks if force_load is True.
+    Useful for loading custom or augmented datasets.
+    """
+
+    def __init__(self, *args, force_load=False, **kwargs):
+        self.force_load = force_load
+        super().__init__(*args, **kwargs)
+
+    def _check_integrity(self):
+        if self.force_load:
+            return True
+        return super()._check_integrity()
+
+
 def data_load(config):
     transform = transforms.ToTensor()
 
-    #   print(
-    #      "remember to run aws configure in terminal and setup credentials"
-    # )  # print kun når der er error
-    # Download dataset
-    # check for data folder if not make one
+    version = config['dataset'].get('version', 'original')
+    version_paths = config['dataset']['paths'].get(version)
 
-    isExist = os.path.exists(config['dataset']['data'])
-    if not isExist:
-        os.mkdir(config['dataset']['data'])
+    if not version_paths:
+        raise ValueError(f"Unknown dataset version '{version}' in config.yaml.")
+    dataset_path = version_paths['local_path']
 
-    if len(os.listdir(config['dataset']['data'])) == 0:
-        print("\nEmpty folder. Importing dataset from S3...")
-        download_data = [
-            "dvc",
-            "import-url",
-            config['dataset']['s3_path'],
-            config['dataset']['data'],
-        ]
-        print(config['dataset']['s3_path'])
-        subprocess.run(download_data, check=True)
-
-    else:
-        print("\nDataset exists in folder. Checking for update using DVC...")
-        update_data = ["dvc", "update", config['dataset']['dvc_path']]
-        print(config['dataset']['dvc_path'])
-        subprocess.run(update_data, check=True)
+    if not os.listdir(dataset_path):
+        raise RuntimeError(
+            f"Dataset folder '{dataset_path}' is empty. Run `dvc pull` manually."
+        )
 
     # Extracts data from dataset with CIFAR10 datastructure
-    trainset = torchvision.datasets.CIFAR10(
-        root=config['dataset']['data'], train=True, download=False, transform=transform
-    )
+    if version == "original":
+        trainset = CIFAR10(
+            root=dataset_path,
+            train=True,
+            download=False,
+            transform=transform,
+        )
+    else:
+        trainset = AugmentedCIFAR10(
+            root=dataset_path,
+            train=True,
+            download=False,
+            transform=transform,
+            force_load=True,
+        )
 
     # Splitting data into Training and validation
     train_size = int(config['train']['train_test_split'] * len(trainset))

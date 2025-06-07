@@ -1,0 +1,20 @@
+stages:
+  augment:
+    cmd: python dataset/augment.py
+    deps:
+    - dataset/augment.py
+    - dataset/original_data/cifar-10-batches-py
+    outs:
+    - dataset/augmented_data/cifar-10-batches-py
+  model_org:
+    cmd: python train.py
+    deps:
+    - config.yaml
+    - modelstructure.py
+    - requirements.txt
+    - train.py
+    - utils/dataloader.py
+    - utils/utils.py
+    outs:
+    - models/Config_latest.json
+    - models/Model_latest.onnx
