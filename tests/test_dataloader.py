@@ -418,7 +418,8 @@ class TestDataLoad:
     @patch('os.listdir')
     @patch('os.path.exists')
     @patch('os.mkdir')
-    @patch('torchvision.datasets.CIFAR10')
+    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
@@ -468,7 +469,8 @@ class TestDataLoad:
 
     @patch('os.listdir')
     @patch('os.path.exists')
-    @patch('torchvision.datasets.CIFAR10')
+    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
@@ -521,7 +523,7 @@ class TestDataLoad:
         # Patch CIFAR10 mock and bypass integrity check
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
-        mock_dataset._check_integrity.return_value = True  # <--- KEY FIX
+        mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
         mock_cifar.return_value = mock_dataset
 
         # Mock random_split
@@ -562,7 +564,8 @@ class TestDataLoad:
     @patch('os.listdir')
     @patch('os.path.exists')
     @patch('os.mkdir')
-    @patch('torchvision.datasets.CIFAR10')
+    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('utils.dataloader.random_split')
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
@@ -619,7 +622,7 @@ class TestDataLoad:
         # Setup CIFAR10 mock
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
-        mock_dataset._check_integrity.return_value = True
+        mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
         mock_cifar.return_value = mock_dataset
 
         # Setup dataset split
@@ -663,7 +666,8 @@ class TestDataLoad:
 
 @patch('os.listdir')
 @patch('os.path.exists')
-@patch('torchvision.datasets.CIFAR10')
+@patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+@patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
 @patch('utils.dataloader.random_split')
 @patch('utils.dataloader.TransformSubset')
 @patch('utils.dataloader.DataLoader')
@@ -716,8 +720,8 @@ def test_data_load_different_split_ratio(
 
     mock_dataset = MagicMock()
     mock_dataset.__len__.return_value = 1000
-    mock_dataset._check_integrity.return_value = True
-    mock_cifar.side_effect = lambda *args, **kwargs: mock_dataset
+    mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
+    mock_cifar.return_value = mock_dataset
 
     mock_train_subset = MagicMock()
     mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
