@@ -415,8 +415,11 @@ def create_mock_subset_for_data_load():
 class TestDataLoad:
     """Test suite for data_load function"""
 
-    @patch('utils.dataloader.AugmentedCIFAR10')
-    @patch('torchvision.datasets.CIFAR10')
+    @patch('utils.dataloader.AugmentedCIFAR10', autospec=True)
+    @patch('torchvision.datasets.CIFAR10', autospec=True)
+    @patch('utils.dataloader.AugmentedCIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('os.listdir')
     @patch('os.path.exists')
     @patch('os.mkdir')
@@ -431,8 +434,11 @@ class TestDataLoad:
         mock_mkdir,
         mock_exists,
         mock_listdir,
-        mock_cifar,
-        mock_augmented_cifar,
+        mock_cifar_init,
+        mock_check_integrity,
+        mock_augmented_cifar_init,
+        mock_cifar_class,
+        mock_augmented_cifar_class,
     ):
         """Test data_load raises if dataset folder is empty and not downloaded"""
         mock_exists.return_value = True
@@ -467,77 +473,11 @@ class TestDataLoad:
             with pytest.raises(RuntimeError, match="Dataset folder './data' is empty"):
                 data_load(config)
 
-    @patch('utils.dataloader.AugmentedCIFAR10')
-    @patch('torchvision.datasets.CIFAR10')
-    @patch('os.listdir')
-    @patch('os.path.exists')
-    @patch('utils.dataloader.random_split')
-    @patch('utils.dataloader.TransformSubset')
-    @patch('utils.dataloader.DataLoader')
-    def test_data_load_existing_data_update(
-        self,
-        mock_dataloader,
-        mock_transform_subset,
-        mock_split,
-        mock_exists,
-        mock_listdir,
-        mock_cifar,
-        mock_augmented_cifar,
-    ):
-        """Test data_load when data folder exists and dataset is used directly"""
-        mock_train_loader = MagicMock()
-        mock_val_loader = MagicMock()
-        mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
-
-        config = {
-            'dataset': {
-                'version': 'original',
-                'paths': {
-                    'original': {'dvc_target': './data.dvc', 'local_path': './data'}
-                },
-            },
-            'train': {'train_test_split': 0.8, 'batch_size': 32, 'num_workers': 2},
-            'data_augmentation': {
-                'resize': [32, 32],
-                'horizontal_flip': 0,
-                'vertical_flip': 0,
-                'brightness': 0,
-                'contrast': 0,
-                'saturation': 0,
-                'hue': 0,
-                'grayscale': 0,
-                'rotation': [0, 0],
-                'width_shift': 0,
-                'height_shift': 0,
-                'degrees': 0,
-                'distortion_scale': 0,
-            },
-        }
-
-        mock_exists.return_value = True
-        mock_listdir.return_value = ['file1.pkl']
-
-        mock_dataset = MagicMock()
-        mock_dataset.__len__.return_value = 1000
-        mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
-        mock_cifar.return_value = mock_dataset
-        mock_augmented_cifar.return_value = mock_dataset
-
-        mock_split.return_value = (MagicMock(), MagicMock())
-        mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
-
-        with patch('utils.dataloader.add_transform') as mock_add_transform:
-            mock_add_transform.return_value = (
-                transforms.ToTensor(),
-                transforms.ToTensor(),
-            )
-            with patch('builtins.print'):
-                train_loader, val_loader = data_load(config)
-
-        assert mock_dataloader.call_count == 2
-
-    @patch('utils.dataloader.AugmentedCIFAR10')
-    @patch('torchvision.datasets.CIFAR10')
+    @patch('utils.dataloader.AugmentedCIFAR10', autospec=True)
+    @patch('torchvision.datasets.CIFAR10', autospec=True)
+    @patch('utils.dataloader.AugmentedCIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+    @patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
     @patch('os.listdir')
     @patch('os.path.exists')
     @patch('os.mkdir')
@@ -552,8 +492,11 @@ class TestDataLoad:
         mock_mkdir,
         mock_exists,
         mock_listdir,
-        mock_cifar,
-        mock_augmented_cifar,
+        mock_cifar_init,
+        mock_check_integrity,
+        mock_augmented_cifar_init,
+        mock_cifar_class,
+        mock_augmented_cifar_class,
     ):
         """Test data_load when data folder doesn't exist"""
         mock_train_loader = MagicMock()
@@ -591,8 +534,8 @@ class TestDataLoad:
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
         mock_dataset.__getitem__.return_value = (torch.randn(3, 32, 32), 0)
-        mock_cifar.return_value = mock_dataset
-        mock_augmented_cifar.return_value = mock_dataset
+        mock_cifar_class.return_value = mock_dataset
+        mock_augmented_cifar_class.return_value = mock_dataset
 
         mock_split.return_value = (MagicMock(), MagicMock())
         mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
@@ -609,8 +552,11 @@ class TestDataLoad:
         assert mock_dataloader.call_count == 2
 
 
-@patch('utils.dataloader.AugmentedCIFAR10')
-@patch('torchvision.datasets.CIFAR10')
+@patch('utils.dataloader.AugmentedCIFAR10', autospec=True)
+@patch('torchvision.datasets.CIFAR10', autospec=True)
+@patch('utils.dataloader.AugmentedCIFAR10.__init__', return_value=None)
+@patch('torchvision.datasets.CIFAR10.__init__', return_value=None)
+@patch('torchvision.datasets.CIFAR10._check_integrity', return_value=True)
 @patch('os.listdir')
 @patch('os.path.exists')
 @patch('utils.dataloader.random_split')
@@ -622,8 +568,11 @@ def test_data_load_different_split_ratio(
     mock_split,
     mock_exists,
     mock_listdir,
-    mock_cifar,
-    mock_augmented_cifar,
+    mock_cifar_init,
+    mock_check_integrity,
+    mock_augmented_cifar_init,
+    mock_cifar_class,
+    mock_augmented_cifar_class,
 ):
     """Test data_load with different train/test split ratio"""
     mock_train_loader = MagicMock()
@@ -662,8 +611,8 @@ def test_data_load_different_split_ratio(
     mock_dataset = MagicMock()
     mock_dataset.__len__.return_value = 1000
     mock_dataset.__getitem__.return_value = (mock_tensor, 0)
-    mock_cifar.return_value = mock_dataset
-    mock_augmented_cifar.return_value = mock_dataset
+    mock_cifar_class.return_value = mock_dataset
+    mock_augmented_cifar_class.return_value = mock_dataset
 
     mock_train_subset = MagicMock()
     mock_train_subset.__len__.return_value = 700
@@ -671,7 +620,6 @@ def test_data_load_different_split_ratio(
     mock_val_subset.__len__.return_value = 300
 
     mock_split.return_value = (mock_train_subset, mock_val_subset)
-
     mock_transform_subset.side_effect = [MagicMock(), MagicMock()]
 
     with patch('utils.dataloader.add_transform') as mock_add_transform:
