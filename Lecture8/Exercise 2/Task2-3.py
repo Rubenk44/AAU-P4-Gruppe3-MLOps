@@ -1,30 +1,20 @@
-import os
-import sys
 import argparse
+import random
+import ssl
+import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
-import numpy as np
-import ssl
 import wandb
-
-# Set root path and import
-root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-if root_path not in sys.path:
-    sys.path.insert(0, root_path)
 from utils.utils import begin_wandb
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-from Mnistmodel import Net
+from Lecture8.Mnistmodel import Net
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
+
 def set_seed(seed):
-    import random
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -32,6 +22,7 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
+
 
 def train(model, device, train_loader, optimizer, epoch, log_interval):
     model.train()
@@ -53,15 +44,22 @@ def train(model, device, train_loader, optimizer, epoch, log_interval):
 
         if batch_idx % log_interval == 0:
             avg_loss = running_loss / (batch_idx + 1)
-            accuracy = 100. * correct / total
-            print(f'Train Epoch: {epoch} [{batch_idx * len(data)}/{len(train_loader.dataset)} '
-                  f'({100. * batch_idx / len(train_loader):.0f}%)]\tLoss: {loss.item():.6f}\tAcc: {accuracy:.2f}%')
-            wandb.log({
-                "Train Loss": avg_loss,
-                "Train Accuracy": accuracy,
-                "Epoch": epoch,
-                "Batch": batch_idx
-            })
+            accuracy = 100.0 * correct / total
+            print(
+                f'Train Epoch: {epoch} [{batch_idx * len(data)}/'
+                f'{len(train_loader.dataset)} '
+                f'({100. * batch_idx / len(train_loader):.0f}%)]\t'
+                f'Loss: {loss.item():.6f}\tAcc: {accuracy:.2f}%'
+            )
+            wandb.log(
+                {
+                    "Train Loss": avg_loss,
+                    "Train Accuracy": accuracy,
+                    "Epoch": epoch,
+                    "Batch": batch_idx,
+                }
+            )
+
 
 def test(model, device, test_loader, epoch=None):
     model.eval()
@@ -78,17 +76,17 @@ def test(model, device, test_loader, epoch=None):
             total += target.size(0)
 
     avg_loss = test_loss / total
-    accuracy = 100. * correct / total
-    print(f'Test set: Average loss: {avg_loss:.4f}, Accuracy: {correct}/{total} ({accuracy:.2f}%)')
+    accuracy = 100.0 * correct / total
+    print(
+        f'Test set: Average loss: {avg_loss:.4f}, '
+        f'Accuracy: {correct}/{total} ({accuracy:.2f}%)'
+    )
 
     if epoch is not None:
-        wandb.log({
-            "Test Loss": avg_loss,
-            "Test Accuracy": accuracy,
-            "Epoch": epoch
-        })
+        wandb.log({"Test Loss": avg_loss, "Test Accuracy": accuracy, "Epoch": epoch})
 
     return accuracy, avg_loss
+
 
 def unlearn(model, device, train_loader, target_class, ascent_steps=5, lr=0.01):
     model.train()
@@ -112,6 +110,7 @@ def unlearn(model, device, train_loader, target_class, ascent_steps=5, lr=0.01):
         if ascent_step >= ascent_steps:
             break
 
+
 def evaluate_forgetting(model, device, test_loader, forgotten_digit):
     model.eval()
     correct_forgotten = 0
@@ -125,27 +124,50 @@ def evaluate_forgetting(model, device, test_loader, forgotten_digit):
             pred = output.argmax(dim=1, keepdim=True)
 
             mask_forgotten = target == forgotten_digit
-            correct_forgotten += pred[mask_forgotten].eq(target[mask_forgotten].view_as(pred[mask_forgotten])).sum().item()
+            correct_forgotten += (
+                pred[mask_forgotten]
+                .eq(target[mask_forgotten].view_as(pred[mask_forgotten]))
+                .sum()
+                .item()
+            )
             total_forgotten += mask_forgotten.sum().item()
 
             mask_others = target != forgotten_digit
-            correct_others += pred[mask_others].eq(target[mask_others].view_as(pred[mask_others])).sum().item()
+            correct_others += (
+                pred[mask_others]
+                .eq(target[mask_others].view_as(pred[mask_others]))
+                .sum()
+                .item()
+            )
             total_others += mask_others.sum().item()
 
-    forgotten_acc = 100. * correct_forgotten / total_forgotten if total_forgotten > 0 else 0
-    others_acc = 100. * correct_others / total_others if total_others > 0 else 0
+    forgotten_acc = (
+        100.0 * correct_forgotten / total_forgotten if total_forgotten > 0 else 0
+    )
+    others_acc = 100.0 * correct_others / total_others if total_others > 0 else 0
 
-    print(f"\nEvaluation After Unlearning:")
-    print(f"\u2192 Accuracy on forgotten digit {forgotten_digit}: {forgotten_acc:.2f}% ({correct_forgotten}/{total_forgotten})")
-    print(f"\u2192 Accuracy on remaining digits: {others_acc:.2f}% ({correct_others}/{total_others})")
+    print("\nEvaluation After Unlearning:")
+    print(
+        f"\u2192 Accuracy on forgotten digit {forgotten_digit}: "
+        f"{forgotten_acc:.2f}% ({correct_forgotten}/{total_forgotten})"
+    )
+    print(
+        f"\u2192 Accuracy on remaining digits: "
+        f"{others_acc:.2f}% ({correct_others}/{total_others})"
+    )
 
-    wandb.log({
-        f"Accuracy on Forgotten Digit {forgotten_digit}": forgotten_acc,
-        "Accuracy on Remaining Digits": others_acc
-    })
+    wandb.log(
+        {
+            f"Accuracy on Forgotten Digit {forgotten_digit}": forgotten_acc,
+            "Accuracy on Remaining Digits": others_acc,
+        }
+    )
+
 
 def main():
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example with Targeted Unlearning')
+    parser = argparse.ArgumentParser(
+        description='PyTorch MNIST Example with Targeted Unlearning'
+    )
     parser.add_argument('--batch-size', type=int, default=64, metavar='N')
     parser.add_argument('--test-batch-size', type=int, default=1000, metavar='N')
     parser.add_argument('--epochs', type=int, default=14, metavar='N')
@@ -165,16 +187,24 @@ def main():
 
     begin_wandb()
 
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+    transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+        ]
+    )
 
-    train_dataset = datasets.MNIST('../data', train=True, download=True, transform=transform)
+    train_dataset = datasets.MNIST(
+        '../data', train=True, download=True, transform=transform
+    )
     test_dataset = datasets.MNIST('../data', train=False, transform=transform)
 
-    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.test_batch_size, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=args.batch_size, shuffle=True
+    )
+    test_loader = torch.utils.data.DataLoader(
+        test_dataset, batch_size=args.test_batch_size, shuffle=False
+    )
 
     model = Net().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
@@ -196,6 +226,7 @@ def main():
         torch.save(model.state_dict(), "mnist_cnn_baseline.pt")
 
     wandb.finish()
+
 
 if __name__ == '__main__':
     main()

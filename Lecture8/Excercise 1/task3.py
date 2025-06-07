@@ -1,31 +1,28 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torchvision import datasets, transforms
-import os
-import sys
-import argparse
 import ssl
 import random
+import argparse
+import torch
+import torch.nn.functional as F
+from torchvision import datasets, transforms
 import wandb
-
+from Lecture8.Mnistmodel import Net
 from avalanche.benchmarks import nc_benchmark
 from avalanche.training.plugins import ReplayPlugin, EvaluationPlugin
 from avalanche.training.supervised import Naive
-from avalanche.evaluation.metrics import accuracy_metrics, loss_metrics, forgetting_metrics
+from avalanche.evaluation.metrics import (
+    accuracy_metrics,
+    loss_metrics,
+    forgetting_metrics,
+)
 from avalanche.logging import InteractiveLogger
-
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
-from Mnistmodel import Net
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
-
 def main():
-    parser = argparse.ArgumentParser(description='Avalanche MNIST Task 3 with Replay + wandb')
+    parser = argparse.ArgumentParser(
+        description='Avalanche MNIST Task 3 with Replay + wandb'
+    )
     parser.add_argument('--batch-size', type=int, default=64)
     parser.add_argument('--epochs', type=int, default=14)
     parser.add_argument('--lr', type=float, default=1.0)
@@ -36,19 +33,24 @@ def main():
     parser.add_argument('--wandb-run-name', type=str, default=None)
     args = parser.parse_args()
 
-    device = torch.device("cuda" if args.use_cuda and torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        "cuda" if args.use_cuda and torch.cuda.is_available() else "cpu"
+    )
     torch.manual_seed(args.seed)
     random.seed(args.seed)
 
     wandb.init(project=args.wandb_project, name=args.wandb_run_name, config=vars(args))
 
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,))
-    ])
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
+    )
 
-    mnist_train = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-    mnist_test = datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+    mnist_train = datasets.MNIST(
+        root='./data', train=True, download=True, transform=transform
+    )
+    mnist_test = datasets.MNIST(
+        root='./data', train=False, download=True, transform=transform
+    )
 
     scenario = nc_benchmark(
         mnist_train,
@@ -56,7 +58,7 @@ def main():
         n_experiences=2,
         task_labels=False,
         seed=args.seed,
-        shuffle=False
+        shuffle=False,
     )
 
     model = Net().to(device)
@@ -68,17 +70,19 @@ def main():
         accuracy_metrics(epoch=True, experience=True, stream=True),
         loss_metrics(epoch=True, experience=True, stream=True),
         forgetting_metrics(experience=True, stream=True),
-        loggers=[InteractiveLogger()]
+        loggers=[InteractiveLogger()],
     )
 
     cl_strategy = Naive(
-        model, optimizer, F.nll_loss,
+        model,
+        optimizer,
+        F.nll_loss,
         train_mb_size=args.batch_size,
         train_epochs=args.epochs,
         eval_mb_size=1000,
         device=device,
         plugins=[replay_plugin],
-        evaluator=eval_plugin
+        evaluator=eval_plugin,
     )
 
     print("Starting training with Avalanche experience replay")
@@ -91,17 +95,19 @@ def main():
         results = cl_strategy.eval(scenario.test_stream)
         print(results)
 
-        # Hardcoded wandb logging for experience 0 and 1 accuracy and loss:
-        wandb.log({
-            "Accuracy_0-4": results.get('Top1_Acc_Exp0_Stream0', None),
-            "Loss_0-4": results.get('Loss_Exp0_Stream0', None),
-            "Accuracy_5-9": results.get('Top1_Acc_Exp1_Stream0', None),
-            "Loss_5-9": results.get('Loss_Exp1_Stream0', None),
-            "Experience": experience.current_experience,
-            "Epoch": cl_strategy.clock.train_exp_epochs,
-        })
+        wandb.log(
+            {
+                "Accuracy_0-4": results.get('Top1_Acc_Exp0_Stream0', None),
+                "Loss_0-4": results.get('Loss_Exp0_Stream0', None),
+                "Accuracy_5-9": results.get('Top1_Acc_Exp1_Stream0', None),
+                "Loss_5-9": results.get('Loss_Exp1_Stream0', None),
+                "Experience": experience.current_experience,
+                "Epoch": cl_strategy.clock.train_exp_epochs,
+            }
+        )
 
     wandb.finish()
+
 
 if __name__ == '__main__':
     main()
