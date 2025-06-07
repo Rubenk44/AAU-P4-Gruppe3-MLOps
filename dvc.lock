@@ -1,0 +1,20 @@
+schema: '2.0'
+stages:
+  augment:
+    cmd: python dataset/augment.py
+    deps:
+    - path: dataset/augment.py
+      hash: md5
+      md5: e978a10dce429c4c0085b68f706fa246
+      size: 1977
+    - path: dataset/original_data/cifar-10-batches-py
+      hash: md5
+      md5: 2c2c368a819f1df18fd0afa1c052c6c4.dir
+      size: 186214114
+      nfiles: 8
+    outs:
+    - path: dataset/augmented_data/cifar-10-batches-py
+      hash: md5
+      md5: 92e54f98fe9d2c7159ae3c5668728b7b.dir
+      size: 186017936
+      nfiles: 7

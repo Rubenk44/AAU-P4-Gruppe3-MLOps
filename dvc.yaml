@@ -1,0 +1,8 @@
+stages:
+  augment:
+    cmd: python dataset/augment.py
+    deps:
+    - dataset/augment.py
+    - dataset/original_data/cifar-10-batches-py
+    outs:
+    - dataset/augmented_data/cifar-10-batches-py
