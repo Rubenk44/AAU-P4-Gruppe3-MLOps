@@ -16,5 +16,5 @@ stages:
     - utils/dataloader.py
     - utils/utils.py
     outs:
-    - models/Config_latest.json
-    - models/Model_latest.onnx
+    - models/configs/config_org.json
+    - models/onnx/model_org.onnx

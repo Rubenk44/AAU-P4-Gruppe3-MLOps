@@ -8,8 +8,6 @@ dataset:
       dvc_target: dataset/augmented_data/cifar-10-batches-py
       local_path: dataset/augmented_data
 
-  
-
 model:
   script_path: models/optimized.py
 
@@ -29,11 +27,15 @@ train:
   optimizer: adam
   num_workers: 1
 
+output:
+  model_path: models/onnx/deepspeed_stage_1.onnx
+  config_path: models/configs/deepspeed_stage_1.json
+
 deepspeed:
   train_batch_size: 64
   gradient_accumulation_steps: 1
   zero_optimization:
-    stage: 3
+    stage: 1
     offload_optimizer:
       device: none
     offload_param:

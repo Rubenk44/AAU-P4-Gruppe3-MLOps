@@ -63,8 +63,8 @@ def begin_wandb():
 
 def model_export(model, device, config):
     model = model.float()
-    onnx_filename = "models/Model_latest.onnx"
-    config_filename = "models/Config_latest.json"
+    onnx_filename = config["output"]["model_path"]
+    config_filename = config["output"]["config_path"]
 
     with open(config_filename, "w") as f:
         json.dump(config, f, indent=4)

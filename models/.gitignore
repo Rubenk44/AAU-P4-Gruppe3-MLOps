@@ -1,2 +1,2 @@
-/Model_latest.onnx
-/Config_latest.json
+configs/
+onnx/

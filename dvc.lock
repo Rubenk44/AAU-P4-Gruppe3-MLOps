@@ -46,11 +46,11 @@ stages:
       md5: ad84eb15f73afce65d374c3f6c9cf0fd
       size: 2166
     outs:
-    - path: models/Config_latest.json
+    - path: models/configs/config_org.json
       hash: md5
       md5: e887a28d781bcaaa313f712b13d0f605
       size: 2215
-    - path: models/Model_latest.onnx
+    - path: models/onnx/model_org.onnx
       hash: md5
       md5: 309725421f6df4e6e08d392a31e6ad53
       size: 250384
