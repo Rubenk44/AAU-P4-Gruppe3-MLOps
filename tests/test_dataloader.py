@@ -1,6 +1,7 @@
 import os
 import torch
 import torchvision.transforms as transforms
+import pytest
 from unittest import mock
 from unittest.mock import patch, MagicMock
 
@@ -422,7 +423,6 @@ class TestDataLoad:
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
     def test_data_load_raises_if_folder_empty(
-        self,
         mock_dataloader,
         mock_transform_subset,
         mock_split,
@@ -431,11 +431,10 @@ class TestDataLoad:
         mock_exists,
         mock_listdir,
     ):
-        """Test data_load when data folder is empty and needs download"""
-        # Setup mock DataLoader to return itself
-        mock_train_loader = MagicMock()
-        mock_val_loader = MagicMock()
-        mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
+        """Test data_load raises if dataset folder is empty and not downloaded"""
+        # Set up mocks
+        mock_exists.return_value = True
+        mock_listdir.return_value = []  # Simulate empty folder
 
         config = {
             'dataset': {
@@ -462,73 +461,9 @@ class TestDataLoad:
             },
         }
 
-        # Create mock tensor
-        mock_tensor = torch.randn(3, 32, 32)
-
-        # Mock folder exists but is empty
-        mock_exists.return_value = True
-        mock_listdir.return_value = []
-
-        # Setup mocks for dataset and subsets
-        mock_dataset = MagicMock()
-        mock_dataset.__len__.return_value = 1000
-        mock_cifar.return_value = mock_dataset
-
-        # Create mock train and val subsets with specific handling for shape access
-        mock_train_subset = MagicMock()
-
-        def train_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
-
-        mock_train_subset.__getitem__.side_effect = train_getitem_side_effect
-        mock_train_subset.__len__.return_value = 800
-
-        mock_val_subset = MagicMock()
-
-        def val_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
-
-        mock_val_subset.__getitem__.side_effect = val_getitem_side_effect
-        mock_val_subset.__len__.return_value = 200
-
-        mock_split.return_value = (mock_train_subset, mock_val_subset)
-
-        # Set up TransformSubset mock
-        mock_transformed_subset1 = MagicMock()
-        mock_transformed_subset1.__getitem__.side_effect = train_getitem_side_effect
-        mock_transformed_subset1.__len__.return_value = 800
-
-        mock_transformed_subset2 = MagicMock()
-        mock_transformed_subset2.__getitem__.side_effect = val_getitem_side_effect
-        mock_transformed_subset2.__len__.return_value = 200
-
-        mock_transform_subset.side_effect = [
-            mock_transformed_subset1,
-            mock_transformed_subset2,
-        ]
-
-        with patch('utils.dataloader.add_transform') as mock_add_transform:
-            mock_add_transform.return_value = (
-                transforms.ToTensor(),
-                transforms.ToTensor(),
-            )
-            with patch('builtins.print'):
-                train_loader, val_loader = data_load(config)
-
-        # Verify DataLoader was called twice (for train and validation)
-        assert mock_dataloader.call_count == 2
+        with patch('builtins.print'), patch('utils.dataloader.add_transform'):
+            with pytest.raises(RuntimeError, match="Dataset folder './data' is empty"):
+                data_load(config)
 
     @patch('os.listdir')
     @patch('os.path.exists')
@@ -537,7 +472,6 @@ class TestDataLoad:
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
     def test_data_load_existing_data_update(
-        self,
         mock_dataloader,
         mock_transform_subset,
         mock_split,
@@ -545,8 +479,9 @@ class TestDataLoad:
         mock_exists,
         mock_listdir,
     ):
-        """Test data_load when data folder exists and needs update"""
-        # Setup mock DataLoader to return mock loaders
+        """Test data_load when data folder exists and dataset is used directly"""
+
+        # Set up mock train/val loaders
         mock_train_loader = MagicMock()
         mock_val_loader = MagicMock()
         mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
@@ -576,56 +511,35 @@ class TestDataLoad:
             },
         }
 
-        # Create mock tensor
+        # Create mock tensor and mock folder state
         mock_tensor = torch.randn(3, 32, 32)
-
-        # Mock folder exists and has files
         mock_exists.return_value = True
-        mock_listdir.return_value = ['file1.pkl', 'file2.pkl']
+        mock_listdir.return_value = ['file1.pkl']
 
-        # Setup mocks for dataset and subsets
+        # Patch CIFAR10 mock and bypass integrity check
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
+        mock_dataset._check_integrity.return_value = True  # <--- KEY FIX
         mock_cifar.return_value = mock_dataset
 
-        # Create mock train and val subsets with specific handling for shape access
+        # Mock random_split
         mock_train_subset = MagicMock()
-
-        def train_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
-
-        mock_train_subset.__getitem__.side_effect = train_getitem_side_effect
+        mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
         mock_train_subset.__len__.return_value = 800
 
         mock_val_subset = MagicMock()
-
-        def val_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
-
-        mock_val_subset.__getitem__.side_effect = val_getitem_side_effect
+        mock_val_subset.__getitem__.return_value = (mock_tensor, 0)
         mock_val_subset.__len__.return_value = 200
 
         mock_split.return_value = (mock_train_subset, mock_val_subset)
 
-        # Set up TransformSubset mock
+        # Mock TransformSubset
         mock_transformed_subset1 = MagicMock()
-        mock_transformed_subset1.__getitem__.side_effect = train_getitem_side_effect
+        mock_transformed_subset1.__getitem__.return_value = (mock_tensor, 0)
         mock_transformed_subset1.__len__.return_value = 800
 
         mock_transformed_subset2 = MagicMock()
-        mock_transformed_subset2.__getitem__.side_effect = val_getitem_side_effect
+        mock_transformed_subset2.__getitem__.return_value = (mock_tensor, 0)
         mock_transformed_subset2.__len__.return_value = 200
 
         mock_transform_subset.side_effect = [
@@ -641,7 +555,6 @@ class TestDataLoad:
             with patch('builtins.print'):
                 train_loader, val_loader = data_load(config)
 
-        # Verify DataLoader was called twice (for train and validation)
         assert mock_dataloader.call_count == 2
 
     @patch('os.listdir')
@@ -652,7 +565,6 @@ class TestDataLoad:
     @patch('utils.dataloader.TransformSubset')
     @patch('utils.dataloader.DataLoader')
     def test_data_load_folder_not_exists(
-        self,
         mock_dataloader,
         mock_transform_subset,
         mock_split,
@@ -662,6 +574,7 @@ class TestDataLoad:
         mock_listdir,
     ):
         """Test data_load when data folder doesn't exist"""
+
         # Setup mock DataLoader to return mock loaders
         mock_train_loader = MagicMock()
         mock_val_loader = MagicMock()
@@ -692,59 +605,37 @@ class TestDataLoad:
             },
         }
 
-        # Create mock tensor
         mock_tensor = torch.randn(3, 32, 32)
 
-        # Mock folder doesn't exist initially
         mock_exists.side_effect = [
             False,
             True,
-        ]  # First call False, second True after mkdir
-        mock_listdir.return_value = []
+        ]  # Simulate folder not existing, then existing
+        mock_listdir.return_value = ['some_file']  # Simulate non-empty folder
 
-        # Setup mocks for dataset and subsets
+        # Setup CIFAR10 mock
         mock_dataset = MagicMock()
         mock_dataset.__len__.return_value = 1000
+        mock_dataset._check_integrity.return_value = True
         mock_cifar.return_value = mock_dataset
 
-        # Create mock train and val subsets with specific handling for shape access
+        # Setup dataset split
         mock_train_subset = MagicMock()
-
-        def train_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
-
-        mock_train_subset.__getitem__.side_effect = train_getitem_side_effect
+        mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
         mock_train_subset.__len__.return_value = 800
 
         mock_val_subset = MagicMock()
-
-        def val_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
-
-        mock_val_subset.__getitem__.side_effect = val_getitem_side_effect
+        mock_val_subset.__getitem__.return_value = (mock_tensor, 0)
         mock_val_subset.__len__.return_value = 200
 
         mock_split.return_value = (mock_train_subset, mock_val_subset)
 
-        # Set up TransformSubset mock
         mock_transformed_subset1 = MagicMock()
-        mock_transformed_subset1.__getitem__.side_effect = train_getitem_side_effect
+        mock_transformed_subset1.__getitem__.return_value = (mock_tensor, 0)
         mock_transformed_subset1.__len__.return_value = 800
 
         mock_transformed_subset2 = MagicMock()
-        mock_transformed_subset2.__getitem__.side_effect = val_getitem_side_effect
+        mock_transformed_subset2.__getitem__.return_value = (mock_tensor, 0)
         mock_transformed_subset2.__len__.return_value = 200
 
         mock_transform_subset.side_effect = [
@@ -760,135 +651,105 @@ class TestDataLoad:
             with patch('builtins.print'):
                 train_loader, val_loader = data_load(config)
 
-        # Verify directory was created
-        mock_mkdir.assert_called_once_with(
-            config['dataset']['paths']['original']['local_path']
-        )
+        # Check folder was created
+        mock_mkdir.assert_called_once_with('./data')
 
-        # Verify DataLoader was called twice (for train and validation)
+        # Check DataLoader was used
         assert mock_dataloader.call_count == 2
 
-    @patch('os.listdir')
-    @patch('os.path.exists')
-    @patch('torchvision.datasets.CIFAR10')
-    @patch('utils.dataloader.random_split')
-    @patch('utils.dataloader.TransformSubset')
-    @patch('utils.dataloader.DataLoader')
-    def test_data_load_different_split_ratio(
-        self,
-        mock_dataloader,
-        mock_transform_subset,
-        mock_split,
-        mock_cifar,
-        mock_exists,
-        mock_listdir,
-    ):
-        """Test data_load with different train/test split ratio"""
-        # Setup mock DataLoader
-        mock_train_loader = MagicMock()
-        mock_train_loader.batch_size = 16
 
-        mock_val_loader = MagicMock()
-        mock_val_loader.batch_size = 16
+@patch('os.listdir')
+@patch('os.path.exists')
+@patch('torchvision.datasets.CIFAR10')
+@patch('utils.dataloader.random_split')
+@patch('utils.dataloader.TransformSubset')
+@patch('utils.dataloader.DataLoader')
+def test_data_load_different_split_ratio(
+    mock_dataloader,
+    mock_transform_subset,
+    mock_split,
+    mock_cifar,
+    mock_exists,
+    mock_listdir,
+):
+    """Test data_load with different train/test split ratio"""
 
-        mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
+    mock_train_loader = MagicMock()
+    mock_train_loader.batch_size = 16
+    mock_val_loader = MagicMock()
+    mock_val_loader.batch_size = 16
+    mock_dataloader.side_effect = [mock_train_loader, mock_val_loader]
 
-        config = {
-            'dataset': {
-                'version': 'original',
-                'paths': {
-                    'original': {'dvc_target': './data.dvc', 'local_path': './data'}
-                },
-            },
-            'train': {
-                'train_test_split': 0.7,  # 70/30 split
-                'batch_size': 16,
-                'num_workers': 4,
-            },
-            'data_augmentation': {
-                'resize': [32, 32],
-                'horizontal_flip': 0,
-                'vertical_flip': 0,
-                'brightness': 0,
-                'contrast': 0,
-                'saturation': 0,
-                'hue': 0,
-                'grayscale': 0,
-                'rotation': [0, 0],
-                'width_shift': 0,
-                'height_shift': 0,
-                'degrees': 0,
-                'distortion_scale': 0,
-            },
-        }
+    config = {
+        'dataset': {
+            'version': 'original',
+            'paths': {'original': {'dvc_target': './data.dvc', 'local_path': './data'}},
+        },
+        'train': {
+            'train_test_split': 0.7,  # 70/30 split
+            'batch_size': 16,
+            'num_workers': 4,
+        },
+        'data_augmentation': {
+            'resize': [32, 32],
+            'horizontal_flip': 0,
+            'vertical_flip': 0,
+            'brightness': 0,
+            'contrast': 0,
+            'saturation': 0,
+            'hue': 0,
+            'grayscale': 0,
+            'rotation': [0, 0],
+            'width_shift': 0,
+            'height_shift': 0,
+            'degrees': 0,
+            'distortion_scale': 0,
+        },
+    }
 
-        # Create mock tensor
-        mock_tensor = torch.randn(3, 32, 32)
+    mock_tensor = torch.randn(3, 32, 32)
+    mock_exists.return_value = True
+    mock_listdir.return_value = ['data']
 
-        mock_exists.return_value = True
-        mock_listdir.return_value = ['data']
+    mock_dataset = MagicMock()
+    mock_dataset.__len__.return_value = 1000
+    mock_dataset._check_integrity.return_value = True
+    mock_cifar.return_value = mock_dataset
 
-        # Setup mocks for dataset and subsets
-        mock_dataset = MagicMock()
-        mock_dataset.__len__.return_value = 1000
-        mock_cifar.return_value = mock_dataset
+    mock_train_subset = MagicMock()
+    mock_train_subset.__getitem__.return_value = (mock_tensor, 0)
+    mock_train_subset.__len__.return_value = 700
 
-        # Create mock train and val subsets with specific handling for shape access
-        mock_train_subset = MagicMock()
+    mock_val_subset = MagicMock()
+    mock_val_subset.__getitem__.return_value = (mock_tensor, 0)
+    mock_val_subset.__len__.return_value = 300
 
-        def train_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
+    mock_split.return_value = (mock_train_subset, mock_val_subset)
 
-        mock_train_subset.__getitem__.side_effect = train_getitem_side_effect
-        mock_train_subset.__len__.return_value = 700
+    mock_transformed_subset1 = MagicMock()
+    mock_transformed_subset1.__getitem__.return_value = (mock_tensor, 0)
+    mock_transformed_subset1.__len__.return_value = 700
 
-        mock_val_subset = MagicMock()
+    mock_transformed_subset2 = MagicMock()
+    mock_transformed_subset2.__getitem__.return_value = (mock_tensor, 0)
+    mock_transformed_subset2.__len__.return_value = 300
 
-        def val_getitem_side_effect(idx):
-            if isinstance(idx, int):
-                return (mock_tensor, 0)
-            elif isinstance(idx, tuple) and len(idx) == 2:
-                if idx[1] == 0:  # For shape access
-                    return mock_tensor
-                return 0
-            return (mock_tensor, 0)
+    mock_transform_subset.side_effect = [
+        mock_transformed_subset1,
+        mock_transformed_subset2,
+    ]
 
-        mock_val_subset.__getitem__.side_effect = val_getitem_side_effect
-        mock_val_subset.__len__.return_value = 300
+    with patch('utils.dataloader.add_transform') as mock_add_transform:
+        mock_add_transform.return_value = (
+            transforms.ToTensor(),
+            transforms.ToTensor(),
+        )
+        with patch('builtins.print'):
+            train_loader, val_loader = data_load(config)
 
-        mock_split.return_value = (mock_train_subset, mock_val_subset)
+    # Check that the split is 700/300 as per the ratio
+    mock_split.assert_called_once_with(mock_dataset, [700, 300])
 
-        # Set up TransformSubset mock
-        mock_transformed_subset1 = MagicMock()
-        mock_transformed_subset1.__getitem__.side_effect = train_getitem_side_effect
-        mock_transformed_subset1.__len__.return_value = 700
-
-        mock_transformed_subset2 = MagicMock()
-        mock_transformed_subset2.__getitem__.side_effect = val_getitem_side_effect
-        mock_transformed_subset2.__len__.return_value = 300
-
-        mock_transform_subset.side_effect = [
-            mock_transformed_subset1,
-            mock_transformed_subset2,
-        ]
-
-        with patch('utils.dataloader.add_transform') as mock_add_transform:
-            mock_add_transform.return_value = (
-                transforms.ToTensor(),
-                transforms.ToTensor(),
-            )
-            with patch('builtins.print'):
-                train_loader, val_loader = data_load(config)
-
-        # Verify split was called with correct sizes (700, 300)
-        mock_split.assert_called_once_with(mock_dataset, [700, 300])
-
-        # Verify loaders have correct batch size
-        assert train_loader.batch_size == 16
-        assert val_loader.batch_size == 16
+    # Check that batch sizes are correct
+    assert train_loader.batch_size == 16
+    assert val_loader.batch_size == 16

@@ -115,6 +115,7 @@ def test_load_config_with_dataset_name(tmp_path):
         yaml.dump(config_content, f)
 
     with mock.patch('builtins.print') as mock_print:
+        load_config(config_path)
         mock_print.assert_called_with("Config loaded from file:", "MNIST")
 
 
@@ -307,8 +308,8 @@ def test_model_export_detailed(mock_randn, mock_onnx_export, mock_json_dump, moc
 
     # Check print message
     mock_print.assert_called_with(
-        "Model & config file saved as: models/Model_latest.onnx \
-            & models/Config_latest.json"
+        "Model & config file saved as: models/Model_latest.onnx "
+        "& models/Config_latest.json"
     )
 
 
