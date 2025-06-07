@@ -1,5 +1,5 @@
 dataset:
-  version: augmented 
+  version: original 
   paths:
     original:
       dvc_target: dataset/original_data/cifar-10-batches-py.dvc
