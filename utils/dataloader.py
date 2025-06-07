@@ -121,6 +121,11 @@ class TransformSubset(torch.utils.data.Dataset):
 
 
 class AugmentedCIFAR10(CIFAR10):
+    """
+    CIFAR10 loader that skips MD5 checks if force_load is True.
+    Useful for loading custom or augmented datasets.
+    """
+
     def __init__(self, *args, force_load=False, **kwargs):
         self.force_load = force_load
         super().__init__(*args, **kwargs)
@@ -143,11 +148,11 @@ def data_load(config):
     dvc_target = version_paths['dvc_target']
     dataset_path = version_paths['local_path']
 
-    if not os.listdir(dataset_path):
-        raise RuntimeError(f"Dataset folder '{dataset_path}' is empty after DVC pull.")
-
     print(f"\nPulling '{version}' dataset using DVC...")
     subprocess.run(["dvc", "pull", dvc_target], check=True)
+
+    if not os.listdir(dataset_path):
+        raise RuntimeError(f"Dataset folder '{dataset_path}' is empty after DVC pull.")
 
     # Extracts data from dataset with CIFAR10 datastructure
     if version == "original":

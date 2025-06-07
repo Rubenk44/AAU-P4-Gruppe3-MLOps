@@ -2,10 +2,10 @@ dataset:
   version: augmented 
   paths:
     original:
-      dvc_target: dataset/cifar-10-batches-py.dvc
+      dvc_target: dataset/original_data/cifar-10-batches-py.dvc
       local_path: dataset/original_data
     augmented:
-      dvc_target: dataset/augmented_data
+      dvc_target: dataset/augmented_data/cifar-10-batches-py
       local_path: dataset/augmented_data
 
   
