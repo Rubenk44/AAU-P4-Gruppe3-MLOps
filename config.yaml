@@ -1,8 +1,13 @@
 dataset:
-  data: ../AAU-P4-Gruppe3-MLOps/dataset
-  s3_path: s3://mlops-version-control/data/cifar-10-batches-py/
-  dvc_path: ../AAU-P4-Gruppe3-MLOps/dataset/cifar-10-batches-py.dvc
-  script_path: ../datasets/cifar10_keras.py
+  version: original  # "augmented" or "original"
+  paths:
+    original:
+      dvc_target: dataset/cifar-10-batches-py.dvc
+      local_path: dataset/cifar-10-batches-py
+    augmented:
+      dvc_target: dataset/cifar-10-augmented
+      local_path: dataset/cifar-10-augmented
+
   
 
 model:

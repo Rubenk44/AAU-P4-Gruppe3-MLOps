@@ -2,8 +2,9 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, random_split
-import os
-import subprocess
+
+# import os
+# import subprocess
 
 
 def add_transform(config, train_subset):
@@ -129,20 +130,27 @@ def data_load(config):
     # Download dataset
     # check for data folder if not make one
 
-    data_dir = config['dataset']['data']
-    dvc_file = config['dataset']['dvc_path']
+    version = config['dataset'].get('version', 'original')
+    version_paths = config['dataset']['paths'].get(version)
 
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
+    if not version_paths:
+        raise ValueError(f"Unknown dataset version '{version}' in config.yaml.")
 
-    print("\nChecking for updates to dataset using DVC...")
-    update_data = ["dvc", "pull", dvc_file]
-    print(dvc_file)
-    subprocess.run(update_data, check=True)
+    #  dvc_target = version_paths['dvc_target']
+    # dataset_path = version_paths['local_path']
+
+    #  if not os.listdir(dataset_path):
+    #  raise RuntimeError(f"Dataset folder '{dataset_path}' is empty after DVC pull.")
+
+    print(f"\nPulling '{version}' dataset using DVC...")
+    # subprocess.run(["dvc", "pull", dvc_target], check=True)
 
     # Extracts data from dataset with CIFAR10 datastructure
     trainset = torchvision.datasets.CIFAR10(
-        root=data_dir, train=True, download=False, transform=transform
+        root="dataset/cifar-10-batches-py",
+        train=True,
+        download=False,
+        transform=transform,
     )
 
     # Splitting data into Training and validation
