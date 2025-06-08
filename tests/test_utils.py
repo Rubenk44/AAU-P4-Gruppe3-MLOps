@@ -71,7 +71,13 @@ def test_begin_wandb(mock_init, mock_login, tmp_path):
 def test_model_export(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
-    config = {'train': {'optimizer': 'adam', 'lr': 0.001}}
+    config = {
+        'train': {'optimizer': 'adam', 'lr': 0.001},
+        'output': {
+            'model_path': 'models/onnx/deepspeed_stage_1.onnx',
+            'config_path': 'models/configs/deepspeed_stage_1.json',
+        },
+    }
 
     model_export(model, device, config)
     mock_onnx_export.assert_called_once()
@@ -275,29 +281,32 @@ def test_begin_wandb_login_failure(mock_init, mock_login):
 @mock.patch("torch.onnx.export")
 @mock.patch("torch.randn")
 def test_model_export_detailed(mock_randn, mock_onnx_export, mock_json_dump, mock_file):
-    """Test model_export with detailed parameter checking"""
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
-    config = {'train': {'optimizer': 'adam', 'lr': 0.001}}
+    config = {
+        'train': {'optimizer': 'adam', 'lr': 0.001},
+        'output': {
+            'model_path': 'models/onnx/deepspeed_stage_1.onnx',
+            'config_path': 'models/configs/deepspeed_stage_1.json',
+        },
+    }
+
     dummy_tensor = torch.randn(1, 3, 32, 32)
     mock_randn.return_value = dummy_tensor
 
     with mock.patch('builtins.print') as mock_print:
         model_export(model, device, config)
 
-    # Check that config was written to the correct file
     mock_json_dump.assert_called_once_with(
         config, mock_file.return_value.__enter__.return_value, indent=4
     )
 
-    # Check that dummy input was generated
     mock_randn.assert_called_with(1, 3, 32, 32)
 
-    # Check ONNX export call
     mock_onnx_export.assert_called_once_with(
         model,
         dummy_tensor.to(device),
-        "models/Model_latest.onnx",
+        "models/onnx/deepspeed_stage_1.onnx",
         opset_version=11,
         input_names=["input"],
         output_names=["output"],
@@ -307,33 +316,32 @@ def test_model_export_detailed(mock_randn, mock_onnx_export, mock_json_dump, moc
         },
     )
 
-    # Check print message
     mock_print.assert_called_with(
-        "Model & config file saved as: models/Model_latest.onnx "
-        "& models/Config_latest.json"
+        "Model & config file saved as: models/onnx/deepspeed_stage_1.onnx "
+        "& models/configs/deepspeed_stage_1.json"
     )
 
 
 @mock.patch("torch.onnx.export")
 def test_model_export_with_different_device(mock_onnx_export):
-    """Test model_export with different device"""
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
-    config = {'train': {'optimizer': 'adam', 'lr': 0.001}}
+    config = {
+        'train': {'optimizer': 'adam', 'lr': 0.001},
+        'output': {
+            'model_path': 'models/onnx/deepspeed_stage_1.onnx',
+            'config_path': 'models/configs/deepspeed_stage_1.json',
+        },
+    }
 
     with mock.patch("builtins.open", mock_open()):
         with mock.patch("json.dump"):
             model_export(model, device, config)
 
-    # Verify that ONNX export was called
-    mock_onnx_export.assert_called_once()
-
-    # Verify that the dummy input is passed to the export function
     args, kwargs = mock_onnx_export.call_args
     model_arg = args[0]
     dummy_input = args[1]
 
-    # Check that model and dummy input are passed
     assert model_arg is model
     assert dummy_input.shape == torch.Size([1, 3, 32, 32])
     assert dummy_input.device.type == device.type
