@@ -76,6 +76,8 @@ def test_model_export(mock_onnx_export, tmp_path):
     model_path = tmp_path / "models" / variant / "config.onnx"
     config_path = tmp_path / "models" / variant / "model.json"
 
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
         'output': {
@@ -87,9 +89,6 @@ def test_model_export(mock_onnx_export, tmp_path):
     model_export(model, device, config)
 
     mock_onnx_export.assert_called_once()
-
-
-# Additional comprehensive tests for better coverage
 
 
 def test_load_config_file_not_found():
