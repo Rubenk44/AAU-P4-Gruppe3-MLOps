@@ -2,7 +2,7 @@ name: AI-LAB Model Training
 on:
   push:
     branches:
-      - dev
+      - master
   workflow_dispatch:
     inputs:
       epochs:
