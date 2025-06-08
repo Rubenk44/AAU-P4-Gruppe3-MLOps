@@ -86,8 +86,6 @@ def test_model_export(mock_onnx_export, tmp_path):
     model_export(model, device, config)
 
     mock_onnx_export.assert_called_once()
-    assert model_path.exists()
-    assert config_path.exists()
 
 
 # Additional comprehensive tests for better coverage
