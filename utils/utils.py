@@ -66,6 +66,9 @@ def model_export(model, device, config):
     onnx_filename = config["output"]["model_path"]
     config_filename = config["output"]["config_path"]
 
+    os.makedirs(os.path.dirname(config["output"]["model_path"]), exist_ok=True)
+    os.makedirs(os.path.dirname(config["output"]["config_path"]), exist_ok=True)
+
     with open(config_filename, "w") as f:
         json.dump(config, f, indent=4)
 

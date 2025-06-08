@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import yaml
 from unittest import mock
@@ -72,11 +73,10 @@ def test_model_export(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
 
-    variant = "test_variant"
-    model_path = tmp_path / "models" / variant / "config.onnx"
-    config_path = tmp_path / "models" / variant / "model.json"
-
-    model_path.parent.mkdir(parents=True, exist_ok=True)
+    # Simulate a dynamic output variant
+    variant = "deepspeed_stage_2"
+    model_path = tmp_path / "models" / variant / "model.onnx"
+    config_path = tmp_path / "models" / variant / "config.json"
 
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
@@ -89,6 +89,12 @@ def test_model_export(mock_onnx_export, tmp_path):
     model_export(model, device, config)
 
     mock_onnx_export.assert_called_once()
+
+    assert model_path.exists(), "Model ONNX file not created"
+    assert config_path.exists(), "Config JSON file not created"
+    with open(config_path) as f:
+        saved_config = json.load(f)
+    assert saved_config == config
 
 
 def test_load_config_file_not_found():

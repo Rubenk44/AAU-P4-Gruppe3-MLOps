@@ -30,3 +30,15 @@ stages:
     outs:
     - models/deepspeed_stage_1/config.json
     - models/deepspeed_stage_1/model.onnx
+  deepspeed_stage_2:
+    cmd: deepspeed --num_gpus=1 train.py
+    deps:
+    - config.yaml
+    - modelstructure.py
+    - requirements.txt
+    - train.py
+    - utils/dataloader.py
+    - utils/utils.py
+    outs:
+    - models/deepspeed_stage_2/config.json
+    - models/deepspeed_stage_2/model.onnx
