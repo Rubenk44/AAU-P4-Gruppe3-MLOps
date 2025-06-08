@@ -71,16 +71,23 @@ def test_begin_wandb(mock_init, mock_login, tmp_path):
 def test_model_export(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
+
+    model_path = tmp_path / "test_model.onnx"
+    config_path = tmp_path / "test_config.json"
+
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
         'output': {
-            'model_path': 'models/onnx/deepspeed_stage_1.onnx',
-            'config_path': 'models/configs/deepspeed_stage_1.json',
+            'model_path': str(model_path),
+            'config_path': str(config_path),
         },
     }
 
     model_export(model, device, config)
+
     mock_onnx_export.assert_called_once()
+    assert model_path.exists()
+    assert config_path.exists()
 
 
 # Additional comprehensive tests for better coverage
@@ -280,14 +287,20 @@ def test_begin_wandb_login_failure(mock_init, mock_login):
 @mock.patch("json.dump")
 @mock.patch("torch.onnx.export")
 @mock.patch("torch.randn")
-def test_model_export_detailed(mock_randn, mock_onnx_export, mock_json_dump, mock_file):
+def test_model_export_detailed(
+    mock_randn, mock_onnx_export, mock_json_dump, mock_file, tmp_path
+):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
+
+    model_path = tmp_path / "detailed_model.onnx"
+    config_path = tmp_path / "detailed_config.json"
+
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
         'output': {
-            'model_path': 'models/onnx/deepspeed_stage_1.onnx',
-            'config_path': 'models/configs/deepspeed_stage_1.json',
+            'model_path': str(model_path),
+            'config_path': str(config_path),
         },
     }
 
@@ -306,7 +319,7 @@ def test_model_export_detailed(mock_randn, mock_onnx_export, mock_json_dump, moc
     mock_onnx_export.assert_called_once_with(
         model,
         dummy_tensor.to(device),
-        "models/onnx/deepspeed_stage_1.onnx",
+        str(model_path),
         opset_version=11,
         input_names=["input"],
         output_names=["output"],
@@ -317,20 +330,23 @@ def test_model_export_detailed(mock_randn, mock_onnx_export, mock_json_dump, moc
     )
 
     mock_print.assert_called_with(
-        "Model & config file saved as: models/onnx/deepspeed_stage_1.onnx "
-        "& models/configs/deepspeed_stage_1.json"
+        f"Model & config file saved as: {model_path} & {config_path}"
     )
 
 
 @mock.patch("torch.onnx.export")
-def test_model_export_with_different_device(mock_onnx_export):
+def test_model_export_with_different_device(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
+
+    model_path = tmp_path / "diff_device_model.onnx"
+    config_path = tmp_path / "diff_device_config.json"
+
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
         'output': {
-            'model_path': 'models/onnx/deepspeed_stage_1.onnx',
-            'config_path': 'models/configs/deepspeed_stage_1.json',
+            'model_path': str(model_path),
+            'config_path': str(config_path),
         },
     }
 
