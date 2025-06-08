@@ -2,7 +2,7 @@ name: AI-LAB Model Training
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
     inputs:
       epochs:
@@ -14,15 +14,26 @@ on:
 jobs:
   train-model:
     runs-on: self-hosted
+
+    env:
+      WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: eu-north-1
+
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
         
       - name: Get DVC data
         run: |
-          echo "Pulling data from DVC"
-          dvc pull dataset/cifar-10-batches-py.dvc
-        continue-on-error: true
+          pip install yq
+
+          VERSION=$(yq '.dataset.version' config.yaml)
+          DVC_TARGET=$(yq ".dataset.paths.${VERSION}.dvc_target" config.yaml)
+
+          echo "Pulling dataset version: $VERSION from target: $DVC_TARGET"
+          dvc pull "$DVC_TARGET"
         
       - name: Setup Python environment
         run: |
@@ -32,9 +43,6 @@ jobs:
           cat setup_output.txt
           
       - name: Run model training
-        env:
-          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-          AWS_public: ${{ secrets.AWS_PUBLIC_KEY }}
         run: |
           echo "Starting model training job"
           # Modify epochs if provided via workflow_dispatch
@@ -67,5 +75,5 @@ jobs:
         with:
           name: trained-model
           path: |
-            Model_*.onnx
-            Config_*.onnx.txt
+            models/*/model.onnx
+            models/*/config.json
