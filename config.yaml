@@ -28,8 +28,8 @@ train:
   num_workers: 1
 
 output:
-  model_path: models/deepspeed_stage3/model.onnx
-  config_path: models/deepspeed_stage3/config.json
+  model_path: models/deepspeed_stage_3/model.onnx
+  config_path: models/deepspeed_stage_3/config.json
 
 deepspeed:
   train_batch_size: 64
