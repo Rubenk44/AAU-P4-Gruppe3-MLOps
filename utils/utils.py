@@ -4,6 +4,7 @@ from torch.optim.lr_scheduler import StepLR
 import wandb
 import os
 import json
+from torch._dynamo import disable as dynamo_disable
 
 
 def device_conf():
@@ -73,16 +74,18 @@ def model_export(model, device, config):
         json.dump(config, f, indent=4)
 
     dummy_input = torch.randn(1, 3, 32, 32).to(device)
-    torch.onnx.export(
-        model,
-        dummy_input,
-        onnx_filename,
-        opset_version=11,
-        input_names=["input"],
-        output_names=["output"],
-        dynamic_axes={
-            "input": {0: "batch_size"},
-            "output": {0: "batch_size"},
-        },
-    )
+
+    with dynamo_disable():
+        torch.onnx.export(
+            model,
+            dummy_input,
+            onnx_filename,
+            opset_version=11,
+            input_names=["input"],
+            output_names=["output"],
+            dynamic_axes={
+                "input": {0: "batch_size"},
+                "output": {0: "batch_size"},
+            },
+        )
     print(f"Model & config file saved as: {onnx_filename} & {config_filename}")
