@@ -3,7 +3,6 @@ import sys
 import onnx
 from onnxruntime.quantization import quantize_dynamic, QuantType
 
-# Optional if you're in a subfolder
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
@@ -19,7 +18,7 @@ def quantize_onnx_model(
     quantize_dynamic(
         model_input=saved_model_path,
         model_output=output_path,
-        weight_type=QuantType.QUInt8,  # You can also try QuantType.QUInt8
+        weight_type=QuantType.QUInt8,
     )
 
     print(f"Quantized ONNX model saved to: {output_path}")

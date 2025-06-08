@@ -1,4 +1,4 @@
-deepspeed_stage_1/
-deepspeed_stage_2/
-deepspeed_stage_3/
+deepspeed_stage1/
+deepspeed_stage2/
+deepspeed_stage3/
 model_org/

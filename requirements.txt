@@ -8,6 +8,7 @@ torchaudio==2.2.0
 wandb==0.18.7
 pytest==8.3.4
 deepspeed==0.17.0
+opencv-python==4.5.5
 protobuf
 absl-py
 onnx

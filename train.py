@@ -20,7 +20,7 @@ def train(local_rank, config):
     dist.init_process_group(backend="nccl", init_method="env://")
 
     if local_rank == 0:
-        begin_wandb()  # only initialize wandb once
+        begin_wandb()
 
     model = ImageNet()
     optimizer = pick_optimizer(model, config)

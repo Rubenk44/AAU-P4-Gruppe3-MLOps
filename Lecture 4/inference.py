@@ -4,7 +4,6 @@ import time
 import numpy as np
 import onnxruntime as ort
 
-# Add parent directory to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 
