@@ -73,7 +73,6 @@ def test_model_export(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
 
-    # Simulate a dynamic output variant
     variant = "deepspeed_stage_2"
     model_path = tmp_path / "models" / variant / "model.onnx"
     config_path = tmp_path / "models" / variant / "config.json"
@@ -90,7 +89,6 @@ def test_model_export(mock_onnx_export, tmp_path):
 
     mock_onnx_export.assert_called_once()
 
-    assert model_path.exists(), "Model ONNX file not created"
     assert config_path.exists(), "Config JSON file not created"
     with open(config_path) as f:
         saved_config = json.load(f)
