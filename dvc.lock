@@ -90,3 +90,39 @@ stages:
       hash: md5
       md5: 6da3fa251066c22b840b537614af1701
       size: 250384
+  deepspeed_stage_2:
+    cmd: deepspeed --num_gpus=1 train.py
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: e493951f87e74e43d4328f81ca06f181
+      size: 1490
+    - path: modelstructure.py
+      hash: md5
+      md5: 12aa8672989b76511d1434707b594549
+      size: 912
+    - path: requirements.txt
+      hash: md5
+      md5: 35b9a9785a2fb871732f7a7a9c33481d
+      size: 193
+    - path: train.py
+      hash: md5
+      md5: ca3a5d397ca1e8c1cdd8d052842f1d46
+      size: 3083
+    - path: utils/dataloader.py
+      hash: md5
+      md5: 0ee63b41535c867423a309a8fcfc0d75
+      size: 6220
+    - path: utils/utils.py
+      hash: md5
+      md5: ed49b96eabca61d918d2d5029e64cf20
+      size: 2460
+    outs:
+    - path: models/deepspeed_stage_2/config.json
+      hash: md5
+      md5: 9706000e0829c7516241babb84d6eca8
+      size: 2609
+    - path: models/deepspeed_stage_2/model.onnx
+      hash: md5
+      md5: 6da3fa251066c22b840b537614af1701
+      size: 250384
