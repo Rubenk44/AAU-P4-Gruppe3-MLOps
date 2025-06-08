@@ -72,8 +72,9 @@ def test_model_export(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
 
-    model_path = tmp_path / "test_model.onnx"
-    config_path = tmp_path / "test_config.json"
+    variant = "test_variant"
+    model_path = tmp_path / "models" / variant / "config.onnx"
+    config_path = tmp_path / "models" / variant / "model.json"
 
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
@@ -291,8 +292,9 @@ def test_model_export_detailed(
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
 
-    model_path = tmp_path / "detailed_model.onnx"
-    config_path = tmp_path / "detailed_config.json"
+    variant = "test_variant"
+    model_path = tmp_path / "models" / variant / "config.onnx"
+    config_path = tmp_path / "models" / variant / "model.json"
 
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},
@@ -337,8 +339,9 @@ def test_model_export_with_different_device(mock_onnx_export, tmp_path):
     model = torch.nn.Linear(10, 2)
     device = torch.device("cpu")
 
-    model_path = tmp_path / "diff_device_model.onnx"
-    config_path = tmp_path / "diff_device_config.json"
+    variant = "test_variant"
+    model_path = tmp_path / "models" / variant / "config.onnx"
+    config_path = tmp_path / "models" / variant / "model.json"
 
     config = {
         'train': {'optimizer': 'adam', 'lr': 0.001},

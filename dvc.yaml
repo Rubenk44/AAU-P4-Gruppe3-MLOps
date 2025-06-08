@@ -16,8 +16,8 @@ stages:
     - utils/dataloader.py
     - utils/utils.py
     outs:
-    - models/model_org/config_org.json
-    - models/model_org/model_org.onnx
+    - models/model_org/config.json
+    - models/model_org/model.onnx
   deepspeed_stage_1:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
@@ -28,5 +28,5 @@ stages:
     - utils/dataloader.py
     - utils/utils.py
     outs:
-    - models/deepspeed_stage_1/deepspeed_stage_1.json
-    - models/deepspeed_stage_1/deepspeed_stage_1.onnx
+    - models/deepspeed_stage_1/config.json
+    - models/deepspeed_stage_1/model.onnx

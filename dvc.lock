@@ -46,11 +46,11 @@ stages:
       md5: ad84eb15f73afce65d374c3f6c9cf0fd
       size: 2166
     outs:
-    - path: models/model_org/config_org.json
+    - path: models/model_org/config.json
       hash: md5
       md5: e887a28d781bcaaa313f712b13d0f605
       size: 2215
-    - path: models/model_org/model_org.onnx
+    - path: models/model_org/model.onnx
       hash: md5
       md5: 309725421f6df4e6e08d392a31e6ad53
       size: 250384
@@ -82,11 +82,11 @@ stages:
       md5: 68f50570496bf86d1efe53b70a7e8049
       size: 2298
     outs:
-    - path: models/deepspeed_stage_1/deepspeed_stage_1.json
+    - path: models/deepspeed_stage_1/config.json
       hash: md5
       md5: 4c5d88cc9f9be0a0cbbbfa8fd03881e9
       size: 2609
-    - path: models/deepspeed_stage_1/deepspeed_stage_1.onnx
+    - path: models/deepspeed_stage_1/model.onnx
       hash: md5
       md5: 6da3fa251066c22b840b537614af1701
       size: 250384

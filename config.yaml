@@ -28,14 +28,14 @@ train:
   num_workers: 1
 
 output:
-  model_path: models/onnx/deepspeed_stage_1.onnx
-  config_path: models/configs/deepspeed_stage_1.json
+  model_path: models/deepspeed_stage_2/config.onnx
+  config_path: models/deepspeed_stage_2/model.json
 
 deepspeed:
   train_batch_size: 64
   gradient_accumulation_steps: 1
   zero_optimization:
-    stage: 1
+    stage: 2
     offload_optimizer:
       device: none
     offload_param:
