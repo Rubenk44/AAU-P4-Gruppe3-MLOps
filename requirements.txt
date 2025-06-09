@@ -14,3 +14,5 @@ absl-py
 onnx
 dvc[s3]
 carbontracker
+matplotlib
+scikit-learn
