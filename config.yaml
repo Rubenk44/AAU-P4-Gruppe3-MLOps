@@ -35,7 +35,7 @@ deepspeed:
   train_batch_size: 64
   gradient_accumulation_steps: 1
   zero_optimization:
-    stage: 3
+    stage: 1
     offload_optimizer:
       device: none
     offload_param:

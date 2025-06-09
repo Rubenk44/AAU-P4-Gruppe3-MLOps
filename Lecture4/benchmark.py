@@ -1,10 +1,6 @@
-import os
-import sys
 import time
 import onnxruntime as ort
 import numpy as np
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from utils.dataloader import data_load
 from utils.utils import load_config
 
@@ -16,7 +12,7 @@ def to_numpy(tensor):
 
 
 def benchmark_onnx_model(
-    model_path="Lecture 4/quantized_model.onnx",
+    model_path="models/deepspeed_stage_1/model_quantized.onnx",
     config_path="config.yaml",
     batch_size=32,
 ):

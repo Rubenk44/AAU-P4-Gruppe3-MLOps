@@ -13,14 +13,17 @@ from utils.utils import (
     begin_wandb,
 )
 from utils.dataloader import data_load
+from carbontracker.tracker import CarbonTracker
 
 
 def train(local_rank, config):
     torch.cuda.set_device(local_rank)
     dist.init_process_group(backend="nccl", init_method="env://")
 
+    tracker = None
     if local_rank == 0:
         begin_wandb()
+        tracker = CarbonTracker(epochs=config['train']['epochs'])
 
     model = ImageNet()
     optimizer = pick_optimizer(model, config)
@@ -35,6 +38,9 @@ def train(local_rank, config):
     train_loader, val_loader = data_load(config)
 
     for epoch in range(config['train']['epochs']):
+        if local_rank == 0:
+            tracker.epoch_start()
+
         model_engine.train()
         running_loss = 0.0
 
@@ -57,7 +63,6 @@ def train(local_rank, config):
             print(f"[Epoch {epoch + 1}] Train Loss: {avg_train_loss:.4f}")
             wandb.log({"epoch": epoch + 1, "train_loss": avg_train_loss})
 
-            # Optional validation
             model_engine.eval()
             val_loss = 0.0
             correct = 0
@@ -89,6 +94,8 @@ def train(local_rank, config):
             print(
                 f"[Epoch {epoch + 1}] Val Acc: {acc:.2f}%, Val Loss: {avg_val_loss:.4f}"
             )
+
+            tracker.epoch_end()
 
     if local_rank == 0:
         model_export(model_engine.module, local_rank, config)

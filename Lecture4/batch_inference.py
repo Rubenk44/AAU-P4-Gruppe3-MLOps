@@ -1,15 +1,16 @@
-import os
-import sys
 import time
 import numpy as np
 import onnxruntime as ort
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from carbontracker.tracker import CarbonTracker
 
 
 def batch_infer(
-    model_path="Lecture 4/quantized_model.onnx", batch_size=32, num_batches=10
+    model_path="models/deepspeed_stage_1/model.onnx", batch_size=32, num_batches=5000
 ):
+
+    tracker = CarbonTracker(epochs=1)
+    tracker.epoch_start()
+
     session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
 
     input_name = session.get_inputs()[0].name
@@ -31,6 +32,8 @@ def batch_infer(
 
     avg_time = (end - start) / num_batches
     print(f"Avg batch inference time (batch_size={batch_size}): {avg_time:.4f}s")
+
+    tracker.epoch_end()
 
 
 if __name__ == "__main__":
