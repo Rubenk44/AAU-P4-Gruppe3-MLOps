@@ -1,14 +1,10 @@
-import os
-import sys
 import onnx
 from onnxruntime.quantization import quantize_dynamic, QuantType
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 
 def quantize_onnx_model(
-    saved_model_path="../mlops/Model_20250606_230312.onnx",
-    output_path="Lecture 4/quantized_model.onnx",
+    saved_model_path="models/deepspeed_stage_1/model.onnx",
+    output_path="models/deepspeed_stage_1/model_quantized.onnx",
 ):
     print(f"Loading ONNX model from: {saved_model_path}")
     model = onnx.load(saved_model_path)

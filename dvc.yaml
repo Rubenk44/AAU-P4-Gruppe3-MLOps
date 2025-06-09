@@ -1,5 +1,5 @@
 stages:
-  augment:
+  augmented_data:
     cmd: python dataset/augment.py
     deps:
     - dataset/augment.py
@@ -9,6 +9,7 @@ stages:
   model_org:
     cmd: python train.py
     deps:
+    - dataset/original_data/cifar-10-batches-py
     - config.yaml
     - modelstructure.py
     - requirements.txt
@@ -21,6 +22,7 @@ stages:
   deepspeed_stage_1:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
+    - dataset/original_data/cifar-10-batches-py
     - config.yaml
     - modelstructure.py
     - requirements.txt
@@ -33,6 +35,7 @@ stages:
   deepspeed_stage_2:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
+    - dataset/original_data/cifar-10-batches-py
     - config.yaml
     - modelstructure.py
     - requirements.txt
@@ -45,6 +48,7 @@ stages:
   deepspeed_stage_3:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
+    - dataset/original_data/cifar-10-batches-py
     - config.yaml
     - modelstructure.py
     - requirements.txt

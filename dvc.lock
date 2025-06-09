@@ -1,6 +1,6 @@
 schema: '2.0'
 stages:
-  augment:
+  augmented_data:
     cmd: python dataset/augment.py
     deps:
     - path: dataset/augment.py
@@ -21,6 +21,11 @@ stages:
   model_org:
     cmd: python train.py
     deps:
+    - path: dataset/original_data/cifar-10-batches-py
+      hash: md5
+      md5: 2c2c368a819f1df18fd0afa1c052c6c4.dir
+      size: 186214114
+      nfiles: 8
     - path: config.yaml
       hash: md5
       md5: 61b020b029e74eb302eb2e4ba1b72cc7
@@ -57,6 +62,11 @@ stages:
   deepspeed_stage_1:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
+    - path: dataset/original_data/cifar-10-batches-py
+      hash: md5
+      md5: 2c2c368a819f1df18fd0afa1c052c6c4.dir
+      size: 186214114
+      nfiles: 8
     - path: config.yaml
       hash: md5
       md5: 7d6c260d364962074451b1b45e9a2ecc
@@ -93,6 +103,11 @@ stages:
   deepspeed_stage_2:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
+    - path: dataset/original_data/cifar-10-batches-py
+      hash: md5
+      md5: 2c2c368a819f1df18fd0afa1c052c6c4.dir
+      size: 186214114
+      nfiles: 8
     - path: config.yaml
       hash: md5
       md5: e493951f87e74e43d4328f81ca06f181
