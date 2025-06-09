@@ -22,8 +22,8 @@ stages:
   deepspeed_stage_1:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
-    - dataset/original_data/cifar-10-batches-py
     - config.yaml
+    - dataset/original_data/cifar-10-batches-py
     - modelstructure.py
     - requirements.txt
     - train.py
@@ -32,6 +32,7 @@ stages:
     outs:
     - models/deepspeed_stage_1/config.json
     - models/deepspeed_stage_1/model.onnx
+    frozen: true
   deepspeed_stage_2:
     cmd: deepspeed --num_gpus=1 train.py
     deps:
@@ -58,3 +59,11 @@ stages:
     outs:
     - models/deepspeed_stage_3/config.json
     - models/deepspeed_stage_3/model.onnx
+  quantize_stage_1:
+    cmd: python Lecture4/quantize.py
+    deps:
+    - Lecture4/quantize.py
+    - models/deepspeed_stage_1/model.onnx
+    - requirements.txt
+    outs:
+    - models/deepspeed_stage_1/model_quantized.onnx
