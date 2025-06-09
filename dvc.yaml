@@ -78,3 +78,11 @@ stages:
     - requirements.txt
     outs:
     - models/deepspeed_stage_2/model_quantized.onnx
+  quantize_stage_3:
+    cmd: python Lecture4/quantize.py
+    deps:
+    - Lecture4/quantize.py
+    - models/deepspeed_stage_3/model.onnx
+    - requirements.txt
+    outs:
+    - models/deepspeed_stage_3/model_quantized.onnx
