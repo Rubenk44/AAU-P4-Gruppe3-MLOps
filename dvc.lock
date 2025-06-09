@@ -242,3 +242,23 @@ stages:
       hash: md5
       md5: c3e14adbacb6fe99fdaee68f5bb649f2
       size: 70234
+  quantize_model_org:
+    cmd: python Lecture4/quantize.py
+    deps:
+    - path: Lecture4/quantize.py
+      hash: md5
+      md5: eee8877328711dcd9d401d6d97805ff4
+      size: 650
+    - path: models/model_org/model.onnx
+      hash: md5
+      md5: 309725421f6df4e6e08d392a31e6ad53
+      size: 250384
+    - path: requirements.txt
+      hash: md5
+      md5: a2df253c530e81201758f18a8031017f
+      size: 207
+    outs:
+    - path: models/model_org/model_quantized.onnx
+      hash: md5
+      md5: 5f87c9c66357a368f27183620326ebd2
+      size: 70235
