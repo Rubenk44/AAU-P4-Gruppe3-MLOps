@@ -1,3 +1,7 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import onnxruntime as ort
 import numpy as np
 from tqdm import tqdm
@@ -46,6 +50,5 @@ def detect_drift(config, onnx_model_path, threshold=0.05):
         return False
 
 
-# Example usage:
 config = load_config("config.yaml")
 detect_drift(config, "models/deepspeed_stage_1/model.onnx", threshold=0.05)

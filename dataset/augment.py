@@ -8,6 +8,8 @@ import shutil
 input_dir = "dataset/original_data/cifar-10-batches-py"
 output_dir = "dataset/augmented_data/cifar-10-batches-py"
 
+if os.path.exists(output_dir):
+    shutil.rmtree(output_dir)
 os.makedirs(output_dir, exist_ok=True)
 
 transform = transforms.Compose(
@@ -27,20 +29,17 @@ def load_batch(path):
 
 def save_batch(data_dict, path):
     with open(path, 'wb') as f:
-        pickle.dump(data_dict, f)
+        pickle.dump(data_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-# Process each training batch
-for fname in tqdm(os.listdir(input_dir)):
+for fname in tqdm(os.listdir(input_dir), desc="Augmenting CIFAR-10"):
     input_path = os.path.join(input_dir, fname)
 
-    # Only augment the data batches, not meta/test
     if fname.startswith("data_batch"):
         data_dict = load_batch(input_path)
         images = data_dict[b'data']
         labels = data_dict[b'labels']
 
-        # Reshape and augment
         images = images.reshape(-1, 3, 32, 32)
         augmented = []
 
@@ -53,17 +52,16 @@ for fname in tqdm(os.listdir(input_dir)):
 
         augmented = np.stack(augmented).reshape(-1, 3072)
         new_batch = {
-            "data": augmented,
-            "labels": labels,
-            "filenames": [
+            'data': augmented,
+            'labels': labels,
+            'filenames': [
                 fn.decode() if isinstance(fn, bytes) else fn
                 for fn in data_dict.get(b'filenames', [])
             ],
-            "batch_label": data_dict.get(b'batch_label', b"augmented").decode(),
+            'batch_label': data_dict.get(b'batch_label', b"augmented").decode(),
         }
 
         save_batch(new_batch, os.path.join(output_dir, fname))
 
     elif fname in ["batches.meta", "test_batch"]:
-        # Just copy unmodified
         shutil.copy(input_path, os.path.join(output_dir, fname))
