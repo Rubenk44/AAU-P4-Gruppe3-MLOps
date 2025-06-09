@@ -13,3 +13,4 @@ protobuf
 absl-py
 onnx
 dvc[s3]
+carbontracker
