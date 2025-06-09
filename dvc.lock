@@ -181,3 +181,64 @@ stages:
       hash: md5
       md5: 7a9e55f05ce338426d281bbdb2677178
       size: 70234
+  deepspeed_stage_3:
+    cmd: deepspeed --num_gpus=1 train.py
+    deps:
+    - path: config.yaml
+      hash: md5
+      md5: fa8c103e20d2f5cff907dd6114cf5070
+      size: 1468
+    - path: dataset/original_data/cifar-10-batches-py
+      hash: md5
+      md5: 2c2c368a819f1df18fd0afa1c052c6c4.dir
+      size: 186214114
+      nfiles: 8
+    - path: modelstructure.py
+      hash: md5
+      md5: 12aa8672989b76511d1434707b594549
+      size: 912
+    - path: requirements.txt
+      hash: md5
+      md5: a2df253c530e81201758f18a8031017f
+      size: 207
+    - path: train.py
+      hash: md5
+      md5: 37a6f939c081c3b6047f8cdb10f65d39
+      size: 3053
+    - path: utils/dataloader.py
+      hash: md5
+      md5: 0ee63b41535c867423a309a8fcfc0d75
+      size: 6220
+    - path: utils/utils.py
+      hash: md5
+      md5: ed49b96eabca61d918d2d5029e64cf20
+      size: 2460
+    outs:
+    - path: models/deepspeed_stage_3/config.json
+      hash: md5
+      md5: e62e5e6bef028bd88ddf575fd60e1cb9
+      size: 2609
+    - path: models/deepspeed_stage_3/model.onnx
+      hash: md5
+      md5: eda2e02397a98b9b9a50aa3b08950582
+      size: 250384
+  quantize_stage_3:
+    cmd: python Lecture4/quantize.py
+    deps:
+    - path: Lecture4/quantize.py
+      hash: md5
+      md5: c97245ee80328eae447f1dc93809d4b0
+      size: 666
+    - path: models/deepspeed_stage_3/model.onnx
+      hash: md5
+      md5: eda2e02397a98b9b9a50aa3b08950582
+      size: 250384
+    - path: requirements.txt
+      hash: md5
+      md5: a2df253c530e81201758f18a8031017f
+      size: 207
+    outs:
+    - path: models/deepspeed_stage_3/model_quantized.onnx
+      hash: md5
+      md5: c3e14adbacb6fe99fdaee68f5bb649f2
+      size: 70234
