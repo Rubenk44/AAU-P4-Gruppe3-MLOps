@@ -179,7 +179,7 @@ def main():
 
     wandb.watch(model)
 
-    print("\n--- Training on digits 0–4 ---")
+    print("Training on subset of digits 0 through 4")
     epochs_task1 = (args.epochs + 1) // 2
     for epoch in range(1, epochs_task1 + 1):
         train(
@@ -203,7 +203,7 @@ def main():
         if args.dry_run:
             break
 
-    print("\n--- Continue Training on digits 5–9 (without reset) ---")
+    print("\nContinuing training on subset of digits 5 through 9")
     forgetting = []
     epochs_task2 = args.epochs - epochs_task1
     for epoch in range(1, epochs_task2 + 1):
