@@ -5,20 +5,24 @@ import onnxruntime as ort
 import numpy as np
 import logging
 import time
+from utils.utils import load_config
 
 
 def main():
     torch.manual_seed(42)
 
+    config = load_config("config.yaml")
+    model_path = config["current_model"]["path"]
+    data_path = config['dataset']['paths']['original']['local_path']
+
     transform = transforms.ToTensor()
     testset = torchvision.datasets.CIFAR10(
-        root='data', train=False, download=True, transform=transform
+        root=data_path, train=False, download=False, transform=transform
     )
     testloader = torch.utils.data.DataLoader(
         testset, batch_size=8, shuffle=False, num_workers=2
     )
 
-    model_path = "Model_20250209_224001.onnx"
     try:
         model = ort.InferenceSession(model_path)
     except Exception as e:

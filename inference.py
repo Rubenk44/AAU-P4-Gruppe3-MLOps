@@ -5,6 +5,7 @@ from torchvision.io import read_image
 import onnxruntime as ort
 import numpy as np
 import cv2 as cv
+from utils.utils import load_config
 
 
 class CustomDataset(Dataset):
@@ -61,9 +62,12 @@ def tensor_to_img(tensor):
 
 
 def main():
+    config = load_config("config.yaml")
+    model_path = config["current_model"]["path"]
+
     # Starts the inference session
     session = ort.InferenceSession(
-        "Model_20250209_224001.onnx",
+        model_path,
         providers=['CUDAExecutionProvider', 'CPUExecutionProvider'],
     )
     print("Started ONNX runtime session")
