@@ -26,7 +26,9 @@ def evaluate_model(onnx_model_path, dataloader):
     return correct / total
 
 
-def detect_drift(config, onnx_model_path, threshold=0.05):
+def detect_drift(config, threshold=0.05):
+    onnx_model_path = config["current_model"]["path"]
+
     print("Evaluating on original dataset...")
     config['dataset']['version'] = 'original'
     _, original_loader = data_load(config)
@@ -51,4 +53,4 @@ def detect_drift(config, onnx_model_path, threshold=0.05):
 
 
 config = load_config("config.yaml")
-detect_drift(config, "models/deepspeed_stage_1/model.onnx", threshold=0.05)
+detect_drift(config, threshold=0.05)

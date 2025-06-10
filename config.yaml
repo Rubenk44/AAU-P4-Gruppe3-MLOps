@@ -8,15 +8,10 @@ dataset:
       dvc_target: dataset/augmented_data/cifar-10-batches-py
       local_path: dataset/augmented_data
 
-model:
-  script_path: models/optimized.py
-
 wandb:
   project: MLOps
 
 train:
-  script_path: train/train_keras.py
-  artifacts_path: artifacts/cifar10_opt/
   train_test_split: 0.8
   batch_size: 32
   epochs: 100
@@ -30,6 +25,9 @@ train:
 output:
   model_path: models/latest/model.onnx
   config_path: models/latest/config.json
+
+current_model:
+  path: "models/deepspeed_stage_1/model.onnx"
 
 deepspeed:
   train_batch_size: 64

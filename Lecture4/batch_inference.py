@@ -1,12 +1,19 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
 import numpy as np
 import onnxruntime as ort
 from carbontracker.tracker import CarbonTracker
+from utils.utils import load_config
 
 
-def batch_infer(
-    model_path="models/deepspeed_stage_1/model.onnx", batch_size=32, num_batches=5000
-):
+def batch_infer():
+    config = load_config("config.yaml")
+    model_path = config["current_model"]["path"]
+    batch_size = 32
+    num_batches = 5000
 
     tracker = CarbonTracker(epochs=1)
     tracker.epoch_start()

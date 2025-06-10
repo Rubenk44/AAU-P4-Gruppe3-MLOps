@@ -15,13 +15,10 @@ def to_numpy(tensor):
     )
 
 
-def benchmark_onnx_model(
-    model_path="models/deepspeed_stage_1/model_quantized.onnx",
-    config_path="config.yaml",
-    batch_size=32,
-):
-    config = load_config(config_path)
+def benchmark_onnx_model():
+    config = load_config("config.yaml")
     val_loader = data_load(config)[1]
+    model_path = config["current_model"]["path"]
 
     session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
 
