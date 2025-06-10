@@ -8,7 +8,7 @@ from modelstructure import ImageNet
 def test_forward_pass():
     # Set seed for reproducibility
     torch.manual_seed(42)
-    
+
     model = ImageNet()
     model.eval()
 
@@ -22,7 +22,7 @@ def test_forward_pass():
 def test_training_step():
     # Set seed for reproducibility
     torch.manual_seed(42)
-    
+
     model = ImageNet()
     model.train()
 
@@ -45,17 +45,20 @@ def test_training_step():
 
     # Test: Loss skal være en positiv værdi
     assert loss.item() > 0, "Loss skal være positiv efter en training step"
-    
-    
+
+
 @pytest.mark.parametrize("batch_size", [1, 4, 8])
 def test_different_batch_sizes(batch_size):
     """Test that the model works with different batch sizes"""
     torch.manual_seed(42)
-    
+
     model = ImageNet()
     model.eval()
-    
+
     input_data = torch.randn(batch_size, 3, 32, 32)
     output = model(input_data)
-    
-    assert output.shape == (batch_size, 10), f"Expected shape ({batch_size}, 10), got {output.shape}"
+
+    assert output.shape == (
+        batch_size,
+        10,
+    ), f"Expected shape ({batch_size}, 10), got {output.shape}"
